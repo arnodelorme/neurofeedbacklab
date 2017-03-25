@@ -1,18 +1,39 @@
 currentp = which('neurofeedback_setup');
 cd(fileparts(currentp));
 
+% start BCILAB
+% ------------
 if ~exist('asr_process') || ~exist('eeg_emptyset')
-    cd('..\BCILAB');
-    bcilab;
-    close;
-    cd(fileparts(currentp));
+    if ~exist('bcilab')
+        error('Cannot find BCILAB. Make sure BCILAB is in your path');
+    else
+        bcilab;
+        close;
+        cd(fileparts(currentp));
+    end;
 end;
 
+% check psychopyshics toolbox
+% ---------------------------
+if ~exist('Screen')
+    if ~exist('bcilab')
+        error('Cannot find psychophysics toolbox - run "SetupPsychtoolbox" from the command line and try again');
+    end;
+end;
+
+% check LSL
+% ---------
+if ~exist('lsl_loadlib')
+    error('Cannot find Lab Streaming Layer - make sure the liblsl-Matlab folder is in your path');
+end;
+
+% Subject name
+% ------------
 subjectName = input('Initials of the subject:','s');
 subjectName = lower(subjectName);
 
 if exist(subjectName) ~= 7
-    error([ 'This subject does not exist, first create a folder with the intial of the subject (lower case)' ]);
+    error([ 'This subject does not exist, first create a folder with the intial of the subject (lower case) - then start this program again' ]);
 end;
 %hashcodefile = fullfile(subjectName, ['hashcode_' subjectName '.mat' ]);
 %if ~exist(hashcodefile)
