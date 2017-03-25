@@ -31,4 +31,4 @@ Tested on Mac and PC but should run on other platforms.
 
 # Publication
 
-This program was used to collect data on 24 subjects in a double blinded protocol (12 neurofeedback and 12 controls). 192 sessions were recorded. The publication is pending.
+This program was used to collect data on 24 subjects in a double blinded protocol (12 neurofeedback and 12 controls). 192 sessions were recorded. The publication is pending. An example of a session is visible here https://youtu.be/7lrMgpV1FSI.
