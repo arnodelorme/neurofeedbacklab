@@ -6,6 +6,7 @@ A Neurofeedback software approach based on Matlab. There is no visual programmin
 
 - Matlab (including student versions)
 - Matlab psychophyics toolbox
+- BCILAB
 - LSL (lab streaming layer)
 
 # Hardware:
