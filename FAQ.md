@@ -1,4 +1,4 @@
-# Frequently ask questions
+# Frequently asked questions
 
 - Do you offer support in using this program? No, although you could try contacting the EEGLAB mailing list since this program is derived from the EEGLAB project https://sccn.ucsd.edu/wiki/EEGLAB_mailing_lists.
 
