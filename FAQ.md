@@ -1,3 +1,7 @@
+# Frequently ask questions
+
+- Do you offer support in using this program? No, although you could try contacting the EEGLAB mailing list since this program is derived from the EEGLAB project https://sccn.ucsd.edu/wiki/EEGLAB_mailing_lists.
+
 - Can I use this program for commercial purposes? The program itself is under the MIT license so it may be used for commercial purposes (as long it is acknowledged). The Psychophysics toolbox is also a commercial friendly license and so is LSL. However BCILAB is under GNU GPL. As long as you remove that parts of the code that uses BCILAB, you may use this program for commercial purposes.
 
 - Can I use the program on a Windows virtual machine if there is no LSL driver for my EEG system on Mac or Linux? You probably can. While the Psychophysics toolbox time accuracy of visual feedback will not be enforced (millisecond precision), this is not a big deal when dealing with Neurofeedback protocols.
