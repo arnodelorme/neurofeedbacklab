@@ -2,6 +2,6 @@
 
 - Can I use the program on a Windows virtual machine if there is no LSL driver for my EEG system on Mac or Linux? You probably can. While the Psychophysics toolbox time accuracy of visual feedback will not be enforced (millisecond precision), this is not a big deal when dealing with Neurofeedback protocols.
 
-- Can I control a game in Unity3D with this program? Why not. Replace the part of the code that displays the visual feedback with UDP or TCP/IP communication with Unity3D, either in Matlab or in Native Java. This is very fast on local host.
+- Can I control a game in Unity3D with this program? Sure, why not? Replace the part of the code that displays the visual feedback with UDP or TCP/IP communication with Unity3D, either in Matlab or in Native Java. This should be very fast on local host.
 
-- Can I do real-time source localization with Loreta? BCILAB supports real-time Loreta (flt_loreta.m) in beta. It should be easy to add Loreta to this program.
+- Can I add real-time source localization with Loreta? BCILAB supports real-time Loreta (flt_loreta.m) in beta. These features were used when generating the Glass Brain (https://www.youtube.com/watch?v=dAIQeTeMJ-I). It should be relatively easy to add Loreta to this program.
