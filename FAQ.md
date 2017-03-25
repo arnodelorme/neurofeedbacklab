@@ -1,6 +1,6 @@
 # Frequently asked questions
 
-- Do you offer support in using this program? No, although you could try contacting the EEGLAB mailing list since this program is derived from the EEGLAB project https://sccn.ucsd.edu/wiki/EEGLAB_mailing_lists.
+- Do you offer support for using this program? No, although you could try contacting the EEGLAB mailing list since this program is derived from the EEGLAB project https://sccn.ucsd.edu/wiki/EEGLAB_mailing_lists.
 
 - Can I use this program for commercial purposes? The program itself is under the MIT license so it may be used for commercial purposes (as long it is acknowledged). The Psychophysics toolbox is also a commercial friendly license and so is LSL. However BCILAB is under GNU GPL. As long as you remove that parts of the code that uses BCILAB, you may use this program for commercial purposes.
 
