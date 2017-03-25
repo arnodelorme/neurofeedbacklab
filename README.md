@@ -5,15 +5,15 @@ A Neurofeedback software approach based on Matlab. There is no visual programmin
 # Dependencies:
 
 - Matlab (including student versions)
-- Matlab psychophyics toolbox
-- BCILAB
-- LSL (lab streaming layer)
+- Matlab psychophyics toolbox http://psychtoolbox.org/
+- BCILAB https://sccn.ucsd.edu/wiki/BCILAB
+- LSL (lab streaming layer) https://github.com/sccn/labstreaminglayer
 
 # Features:
 
-- Run n sessions over m days. The first session of each day is always a baseline used for ASR below.
-- Manage subjects, automatically creates new folders for new subjects and track subject progress. Track human errors by checking that a new sessions is preceeded by an existing previous session.
+- Manage subjects, automatically creates new folders for new subjects and track subjects' progress. Track human errors by checking that new sessions are preceeded by existing previous sessions. Made as much human proof as possible.
 - Allow blinded protocol where a session from one subject is replayed to another subject (the data from the sham subject is recorded as if he was doing the task but the feedback from another subject is shownn).
+- Run n sessions over m days. The first session of each day is always a baseline used for artifact rejection below.
 - Adaptive filtering with minimum phase distortion
 - Automated artifact rejection using Artifact Subspace Reconstruction. This methods uses PCA to find artifactual sections of data, then reconstruct a clean signal based on the statistics of the basline. https://sccn.ucsd.edu/~scott/pdf/Mullen_BCI13.pdf
 - Possible spacial filter (independent component analysis) although these have to be entered manually in the script for each subject
@@ -23,8 +23,12 @@ A Neurofeedback software approach based on Matlab. There is no visual programmin
 
 # Hardware:
 
-Any hardware supported by LSL. ADR100 board if you want to be able to send events from the presentation computer to the EEG system.
+Any hardware supported by LSL. Allow using ADR101 board (http://www.ontrak.net/adr101.htm) if you want to be able to send events from the presentation computer to the EEG system. These boards translate serial information to parallel that can be used with EEG systems. The current program was used with a BIOSEMI 64-channel system.
 
 # Platform
 
-Tested on Mac but should run on other platforms
+Tested on Mac and PC but should run on other platforms.
+
+# Publication
+
+This program was used to collect data on 24 subjects in a double blinded protocol (12 neurofeedback and 12 controls). 192 sessions were recorded. The publication is pending.
