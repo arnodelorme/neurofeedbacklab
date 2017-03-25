@@ -11,7 +11,8 @@ A Neurofeedback software approach based on Matlab. There is no visual programmin
 
 # Features:
 
-- Manage subjects, automatically creates new folders for new subjects and track subjects' progress. Track human errors by checking that new sessions are preceeded by existing previous sessions. Made as much human proof as possible.
+- Manage subjects and track subjects' progress. Track human errors by checking that new sessions are preceeded by existing previous sessions. Made as much human proof as possible.
+- One computer runs data acquisition and performs the feedback. Assumes that 2 screens are connected to the same PC, one screen for the experimenter and one screen for the participant. Can also be set up a single screen program that the experimenter and participant share.
 - Allow blinded protocol where a session from one subject is replayed to another subject (the data from the sham subject is recorded as if he was doing the task but the feedback from another subject is shownn).
 - Run n sessions over m days. The first session of each day is always a baseline used for artifact rejection below.
 - Adaptive filtering with minimum phase distortion
@@ -23,11 +24,11 @@ A Neurofeedback software approach based on Matlab. There is no visual programmin
 
 # Hardware:
 
-Any hardware supported by LSL. Allow using ADR101 board (http://www.ontrak.net/adr101.htm) if you want to be able to send events from the presentation computer to the EEG system. These boards translate serial information to parallel that can be used with EEG systems. The current program was used with a BIOSEMI 64-channel system.
+Any EEG system supported by LSL (this includes BIOSEMI, EGI, Neuroscan, Brainproducts, Emotiv, Cognionics, Enobio, Muse etc...). See the full list at https://github.com/sccn/labstreaminglayer/wiki/SupportedDevices.wiki. Allow using ADR101 board (http://www.ontrak.net/adr101.htm) if you want to be able to send events from the presentation computer to the EEG system. These boards translate serial information to parallel that can be used with EEG systems. Plan for a relatively powerfull multi-core computer to perform both data acquisition and feedback. The current program was used with a BIOSEMI 64-channel system and a 4-core Dell workstation with 8Gb of RAM.
 
 # Platform
 
-Tested on Windows. It should run on Mac if you can find the LSL drivers for your hardware.
+Tested on Windows. It should run on Mac if you can find the LSL drivers for your EEG system.
 
 # Publication
 
