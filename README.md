@@ -27,7 +27,7 @@ Any hardware supported by LSL. Allow using ADR101 board (http://www.ontrak.net/a
 
 # Platform
 
-Tested on Mac and PC but should run on other platforms.
+Tested on Windows. It should run on Mac if you can find the LSL drivers for your hardware.
 
 # Publication
 
