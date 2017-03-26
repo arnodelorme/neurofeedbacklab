@@ -1,5 +1,6 @@
-function neurofeedback_process(runtype, fileNameAsr, fileNameOut, nchans)
+function neurofeedback_process(runtype, fileNameAsr, fileNameOut)
 
+nfblab_options;
 global serialPort;
 
 % make sure the function can be run again
@@ -67,9 +68,7 @@ lib = lsl_loadlib();
 % resolve a stream...
 disp('Resolving an EEG stream...');
 result = {};
-while isempty(result)
-    result = lsl_resolve_byprop(lib,'type','EEG');
-end
+result = nsklab_findlslstream(lib,lsltype,lslname)
 disp('Opening an inlet...');
 inlet = lsl_inlet(result{1});
 disp('Now receiving chunked data...');
