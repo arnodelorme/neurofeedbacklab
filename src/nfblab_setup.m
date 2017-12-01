@@ -31,7 +31,7 @@ else
     result = nsklab_findlslstream(lib,lsltype,lslname);
 end;
 
-% Subject name
+%% Subject name
 % ------------
 subjectName = input('Initials of the subject:','s');
 subjectName = lower(subjectName);
@@ -79,7 +79,7 @@ if trial == 0
     end;
     s = input('Is the EEG data being saved using LSL Labrecorded - press enter when ready or if you do not want to save it (Enter/CTRL-C to exit)','s');
     
-    nfblab_process('baseline', asrFileName, '', nchans)
+    nfblab_process('baseline', asrFileName, '')
     %save(asrFileName, '-mat', 'fileList');
 else
     
@@ -101,6 +101,6 @@ else
     end;
     s = input('Is the EEG data being saved using LSL Labrecorded - press enter when ready or if you do not want to save it (Enter/CTRL-C to exit)','s');
     
-    nfblab_process('trial', asrFileName, fileName, nchans)
+    nfblab_process('trial', asrFileName, fileName)
     %save(fileName, '-mat', 'fileList');
 end;
