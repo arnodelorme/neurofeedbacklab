@@ -28,7 +28,7 @@ if ~exist('lsl_loadlib')
     error('Cannot find Lab Streaming Layer - make sure the liblsl-Matlab folder is in your path');
 else
     lib = lsl_loadlib();
-    result = nsklab_findlslstream(lib,lsltype,lslname);
+    result = nfblab_findlslstream(lib,lsltype,lslname);
 end;
 
 %% Subject name

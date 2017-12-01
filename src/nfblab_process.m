@@ -68,7 +68,7 @@ lib = lsl_loadlib();
 % resolve a stream...
 disp('Resolving an EEG stream...');
 result = {};
-result = nsklab_findlslstream(lib,lsltype,lslname)
+result = nfblab_findlslstream(lib,lsltype,lslname)
 disp('Opening an inlet...');
 inlet = lsl_inlet(result{1});
 disp('Now receiving chunked data...');
