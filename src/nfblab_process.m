@@ -190,7 +190,7 @@ while toc < sessionDuration
             dataAccu(:, dataAccuPointer:dataAccuPointer+size(EEG.data,2)-1) = EEG.data;
         else
             % apply ASR and update state
-            [EEG.data stateAsr]= asr_process(EEG.data, EEG.srate, stateAsr);
+            [EEG.data, stateAsr]= asr_process(EEG.data, EEG.srate, stateAsr);
             dataAccu(:, dataAccuPointer:dataAccuPointer+size(EEG.data,2)-1) = EEG.data;
         end;
         dataAccuPointer = dataAccuPointer + size(EEG.data,2);
@@ -200,6 +200,7 @@ while toc < sessionDuration
         ICAact = mask*EEG.data;
         
         % Perform spectral decomposition
+        % taper the data with hamming
         dataSpec = fft(ICAact, nfft);
         dataSpec = dataSpec(freqRange);
         X        = mean(10*log10(abs(dataSpec).^2));
