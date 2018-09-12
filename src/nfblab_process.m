@@ -115,6 +115,7 @@ freqRange = intersect( find(freqs >= theta(1)), find(freqs <= theta(2)) );
 tic;
 totSamples = 0;
 state = [];
+statelp = [];
 EEG = eeg_emptyset;
 EEG.nbchan = length(chans);
 EEG.srate  = srate;
@@ -158,7 +159,12 @@ while toc < sessionDuration
     
     if dataBufferPointer > chunkSize*winPerSec
         
-        % empty buffer
+        % Low pass filter before decimating
+        EEG.srate = srateBiosemi;
+        [EEG statelp] = hlp_scope({'disable_expressions',true},@flt_fir, 'signal', EEG, 'fspec', [0 srate/srateBiosemi], 'fmode', 'lowpass',  'ftype','minimum-phase', 'state', statelp);
+        EEG.srate = srate;
+
+        % Decimate
         if srateBiosemi == srate
             EEG.data = dataBuffer(:,1:chunkSize*winPerSec);            
         elseif srateBiosemi == 2*srate
@@ -168,7 +174,8 @@ while toc < sessionDuration
         elseif srateBiosemi == 8*srate
             EEG.data = dataBuffer(:,1:8:chunkSize*winPerSec);
         else error('Cannot convert sampling rate');
-        end;
+        end
+        
         % shift 1 block
         dataBuffer(:, 1:chunkSize*(winPerSec-1)) = dataBuffer(:, chunkSize+1:chunkSize*winPerSec);
         dataBufferPointer = dataBufferPointer-chunkSize;
@@ -201,7 +208,7 @@ while toc < sessionDuration
         
         % Perform spectral decomposition
         % taper the data with hamming
-        dataSpec = fft(ICAact, nfft);
+        dataSpec = fft(ICAact .* hamming(length(ICAact)), nfft);
         dataSpec = dataSpec(freqRange);
         X        = mean(10*log10(abs(dataSpec).^2));
         chunkPower(chunkCount) = X;
