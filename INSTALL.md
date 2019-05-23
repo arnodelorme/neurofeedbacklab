@@ -1,6 +1,6 @@
 These are the different instalation steps.
 
-# Installs
+# Install
 - On a Windows computer
 - Install Matlab. You may use a student version of Matlab.
 - Install BCILAB https://github.com/sccn/BCILAB and add to Matlab path (go to the root folder and type "bcilab")
