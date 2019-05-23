@@ -8,7 +8,7 @@ These are the different instalation steps.
 - Install the Lab Streaming Layer https://github.com/sccn/labstreaminglayer binaries. **Do not clone the project or download the zip for the Github project**. Instead use the binary repository (ftp://sccn.ucsd.edu/pub/software/LSL/). Download ZIP files for the *labrecorder* (App folder), the program that can interface your EEG system (App folder - for example *Biosemix.xx.zip* if you have a BIOSEMI system) and all the LSL librairies (SDK folder *liblsl-ALL-languages-x.xx.zip*). Familiarize yourself with LSL. You need to be able to connect to your EEG hardware and use the LabRecorder to save data from your hardware, then open and inspect that data under the EEGLAB software (for example). When ready, add the path to Matlab driver to your Matlab path (*liblsl-All-Languages-x.xx/liblsl-Matlab* folder).
 
 # Make sure Matlab can connect to LSL
-After finding the name of your stream using Pyrecorder, use the following code snippet to connect to your stream on Matlab
+After finding the name of your LSL stream using Pyrecorder, use the following code snippet to connect to your stream on Matlab
 
 ```Matlab
 lib = lsl_loadlib();
@@ -19,6 +19,32 @@ pause(1);
 pause(1);
 [chunk,stamps] = inlet.pull_chunk();
 figure; plot(chunk');
+```
+
+# To get started with Neurofeedback lab
+
+## Change the settings for your hardware
+Edit the file nfblab_option.m to set you hardware number of channels and sampling frequency.
+
+## Save baseline file with ASR (artifact rejection) parameters
+If the code below does not work, disable to Matlab psycho toolbox in the nfblab_option.m file (set to false) 
+
+```Matlab
+nfblab_process(‘baseline', ‘asrfile.mat', ‘baseline_eeg_output.mat’)
+```
+
+## Run trial session
+A trial session takes as input the ASR parameter file saved above and output an EEG file with all the parameters
+
+```Matlab
+nfblab_process(’trial', ‘asrfile.mat', ’trial_eeg_output.mat')
+```
+
+## Run series of trial session
+The program below will ask you for questions on the command line and help organize the data for your subjects (create folders etc...). 
+
+```Matlab
+nfblab_run
 ```
 
 # Computer settings
