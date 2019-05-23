@@ -30,14 +30,14 @@ Edit the file nfblab_option.m to set you hardware number of channels and samplin
 If the code below does not work, disable to Matlab psycho toolbox in the nfblab_option.m file (set to false) 
 
 ```Matlab
-nfblab_process(‘baseline', ‘asrfile.mat', ‘baseline_eeg_output.mat’)
+nfblab_process('baseline', 'asrfile.mat', 'baseline_eeg_output.mat')
 ```
 
 ## Run trial session
 A trial session takes as input the ASR parameter file saved above and output an EEG file with all the parameters
 
 ```Matlab
-nfblab_process(’trial', ‘asrfile.mat', ’trial_eeg_output.mat')
+nfblab_process('trial', 'asrfile.mat', 'trial_eeg_output.mat')
 ```
 
 ## Run series of trial session
