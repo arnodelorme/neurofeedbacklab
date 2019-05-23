@@ -8,7 +8,7 @@ These are the different instalation steps.
 - Install the Lab Streaming Layer https://github.com/sccn/labstreaminglayer binaries. **Do not clone the project or download the zip for the Github project**. Instead use the binary repository (ftp://sccn.ucsd.edu/pub/software/LSL/). Download ZIP files for the *labrecorder* (App folder), the program that can interface your EEG system (App folder - for example *Biosemix.xx.zip* if you have a BIOSEMI system) and all the LSL librairies (SDK folder *liblsl-ALL-languages-x.xx.zip*). Familiarize yourself with LSL. You need to be able to connect to your EEG hardware and use the LabRecorder to save data from your hardware, then open and inspect that data under the EEGLAB software (for example). When ready, add the path to Matlab driver to your Matlab path (*liblsl-All-Languages-x.xx/liblsl-Matlab* folder).
 
 # Make sure Matlab can connect to LSL
-After finding the name of your LSL stream using Pyrecorder, use the following code snippet to connect to your stream on Matlab
+After finding the name of your LSL stream using Pyrecorder, adding the path to both LSL and the Neurofeedbacklab src folder, use the following code snippet to check if you can stream data on Matlab
 
 ```Matlab
 lib = lsl_loadlib();
