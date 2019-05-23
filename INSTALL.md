@@ -81,7 +81,7 @@ A trial session takes as input the ASR parameter file saved above and output an 
 nfblab_process('trial', 'asrfile.mat', 'trial_eeg_output.mat')
 ```
 
-## Run series of trial session
+## Run series of trial sessions
 The program below will ask you for questions on the command line and help organize the data for your subjects (create folders etc...). 
 
 ```Matlab
