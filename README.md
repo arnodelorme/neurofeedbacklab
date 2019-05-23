@@ -36,4 +36,4 @@ This program was used to collect data on 24 subjects in a double blinded protoco
 
 # Install and getting started
 
-See the [Install.md](install.md) documentation.
+See the [INSTALL.md](INSTALL.md) documentation.
