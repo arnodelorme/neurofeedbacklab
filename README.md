@@ -5,7 +5,7 @@ A Neurofeedback software approach based on Matlab. There is no visual programmin
 # Dependencies:
 
 - Matlab (including student versions)
-- Matlab psychophyics toolbox http://psychtoolbox.org/
+- Matlab psychophysics toolbox http://psychtoolbox.org/
 - BCILAB https://sccn.ucsd.edu/wiki/BCILAB
 - LSL (lab streaming layer) https://github.com/sccn/labstreaminglayer
 
