@@ -1,10 +1,10 @@
-function neurofeedback_process(runtype, fileNameAsr, fileNameOut)
+function nfblab_process(runtype, fileNameAsr, fileNameOut)
 
 nfblab_options;
 global serialPort;
 
 % make sure the function can be run again
-onCleanup(@() neurofeedback_cleanup);
+onCleanup(@() nfblab_cleanup);
 
 if ~strcmpi(runtype, 'trial') && ~strcmpi(runtype, 'baseline') 
     error('Wrong run type')
@@ -21,45 +21,11 @@ if nchans ~= 8 && nchans ~= 128 && nchans ~= 64
     error('nchans must be 8, 64 or 128')
 end;
 
-% data acquisition parameters
-srate        = 256;
-srateBiosemi = 2048;
-nfft       = 256;
-windowSize = 256; % 1 second
-windowInc  = 64; % update every 1/4 second
-if nchans == 8
-    chans = 34:41;
-    mask = zeros(length(chans),1)';
-    mask(1) = 1; % Fz
-elseif nchans == 64
-    chans = 2:65;
-    mask = zeros(length(chans),1)';
-    mask(38) = 1; % Fz
-elseif nchans == 128
-    chans = 2:129;
-    mask = zeros(length(chans),1)';
-    error('Tracy, please enter the index of Fz below in the script'); 
-    mask(85) = 1; % enter the index of Fz: if Fz is at index 65, enter mask(65) = 1
-end;
+dataBuffer = zeros(length(chans), (windowSize*2)/srate*srateHardware);
 
-theta      = [3.5 6.5];
-dataBuffer = zeros(length(chans), (windowSize*2)/srate*srateBiosemi);
-sessionDuration = 60*5; % 5 minutes
-maxChange      = 0.05;
 dataAccu = zeros(length(chans), (sessionDuration+3)*srate); % to save the data
 dataAccuPointer = 1;
-if strcmpi(runtype, 'baseline')
-    % 1 minute of data for baseline
-    sessionDuration = 60; % 1 minute
-    maxChange      = 0.10;
-end;
-psychoToolbox  = true;
-dataBufferPointer = 1;
-
-% feedback parameters
-dynRange       = [16 29];
-feedbackVal    = 0.5;
-adrBoard       = true;
+feedbackVal    = 0.5;       % initial feedback value
 
 % instantiate the library
 disp('Loading the library...');
@@ -68,7 +34,7 @@ lib = lsl_loadlib();
 % resolve a stream...
 disp('Resolving an EEG stream...');
 result = {};
-result = nfblab_findlslstream(lib,lsltype,lslname)
+result = nfblab_findlslstream(lib,lsltype,lslname);
 disp('Opening an inlet...');
 inlet = lsl_inlet(result{1});
 disp('Now receiving chunked data...');
@@ -120,10 +86,10 @@ EEG = eeg_emptyset;
 EEG.nbchan = length(chans);
 EEG.srate  = srate;
 EEG.xmin   = 0;
-tmp = load('-mat','chanlocs.mat');
-EEG.chanlocs = tmp.chanlocs;
+% tmp = load('-mat','chanlocs.mat');
+% EEG.chanlocs = tmp.chanlocs;
 winPerSec = windowSize/windowInc;
-chunkSize = windowInc*srateBiosemi/srate; % at 512 so every 1/4 second is 128 samples
+chunkSize = windowInc*srateHardware/srate; % at 512 so every 1/4 second is 128 samples
 tic;
 
 
@@ -159,19 +125,14 @@ while toc < sessionDuration
     
     if dataBufferPointer > chunkSize*winPerSec
         
-        % Low pass filter before decimating
-        EEG.srate = srateBiosemi;
-        [EEG statelp] = hlp_scope({'disable_expressions',true},@flt_fir, 'signal', EEG, 'fspec', [0 srate/srateBiosemi], 'fmode', 'lowpass',  'ftype','minimum-phase', 'state', statelp);
-        EEG.srate = srate;
-
         % Decimate
-        if srateBiosemi == srate
+        if srateHardware == srate
             EEG.data = dataBuffer(:,1:chunkSize*winPerSec);            
-        elseif srateBiosemi == 2*srate
+        elseif srateHardware == 2*srate
             EEG.data = dataBuffer(:,1:2:chunkSize*winPerSec);
-        elseif srateBiosemi == 4*srate
+        elseif srateHardware == 4*srate
             EEG.data = dataBuffer(:,1:4:chunkSize*winPerSec);
-        elseif srateBiosemi == 8*srate
+        elseif srateHardware == 8*srate
             EEG.data = dataBuffer(:,1:8:chunkSize*winPerSec);
         else error('Cannot convert sampling rate');
         end
@@ -216,11 +177,11 @@ while toc < sessionDuration
         % compute feedback value between 0 and 1
         totalRange = dynRange(2)-dynRange(1);
         feedbackValTmp = (X-dynRange(1))/totalRange;
-        if feedbackValTmp > 1, dynRange(2) = dynRange(2)+totalRange/30; feedbackValTmp = 1;
-        else                   dynRange(2) = dynRange(2)-totalRange/100;
+        if feedbackValTmp > 1, dynRange(2) = dynRange(2)+dynRangeInc*totalRange; feedbackValTmp = 1;
+        else                   dynRange(2) = dynRange(2)-dynRangeDec*totalRange;
         end;
-        if feedbackValTmp < 0, dynRange(1) = dynRange(1)-totalRange/30; feedbackValTmp = 0;
-        else                   dynRange(1) = dynRange(1)+totalRange/100;
+        if feedbackValTmp < 0, dynRange(1) = dynRange(1)-dynRangeInc*totalRange; feedbackValTmp = 0;
+        else                   dynRange(1) = dynRange(1)+dynRangeDec*totalRange;
         end;
         if feedbackValTmp<feedbackVal
             if abs(feedbackValTmp-feedbackVal) > maxChange, feedbackVal = feedbackVal-maxChange;
