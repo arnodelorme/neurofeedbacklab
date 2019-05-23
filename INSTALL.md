@@ -11,7 +11,7 @@
 - Go to your graphic card properties (display settings and select your graphic card). If you do not have graphic properties, then do not worry about this step. Disable tripple buferring, double buffering and any other fancy option (3-D etc...).
 
 # Program settings
-Program settings are contained in the file nfblab_option.m, the content of which is copied below
+Program settings are contained in the file [src/nfblab_option.m](nfblab_option.m). Parameters are explained below.
 
 ## General parameters
 - psychoToolbox (true/false), Toggle to false for testing without psych toolbox
