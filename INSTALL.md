@@ -1,5 +1,3 @@
-These are the different instalation steps.
-
 # Install
 - On a Windows computer
 - Install Matlab. You may use a student version of Matlab.
