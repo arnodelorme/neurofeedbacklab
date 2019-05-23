@@ -21,7 +21,7 @@ pause(1);
 figure; plot(chunk');
 ```
 
-# To get started with Neurofeedback lab
+# To get started with Neurofeedbacklab
 
 ## Change the settings for your hardware
 Edit the file nfblab_option.m to set you hardware number of channels and sampling frequency.
