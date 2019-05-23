@@ -11,7 +11,7 @@
 - Go to your graphic card properties (display settings and select your graphic card). If you do not have graphic properties, then do not worry about this step. Disable tripple buferring, double buffering and any other fancy option (3-D etc...).
 
 # Program settings
-Program settings are contained in the file [src/nfblab_option.m](nfblab_option.m). Parameters are explained below.
+Program settings are contained in the file [nfblab_option.m](src/nfblab_option.m). Parameters are explained below.
 
 ## General parameters
 - psychoToolbox (true/false), Toggle to false for testing without psych toolbox
@@ -63,10 +63,10 @@ figure; plot(chunk');
 # To get started with Neurofeedbacklab
 
 ## Change the settings for your hardware
-Edit the file nfblab_option.m to set you hardware number of channels and sampling frequency.
+Edit the file [nfblab_option.m](src/nfblab_option.m) to set you hardware number of channels and sampling frequency, and the name of your LSL stream.
 
 ## Save baseline file with ASR (artifact rejection) parameters
-If the code below does not work, disable to Matlab psycho toolbox in the nfblab_option.m file (set to false) 
+If the code below does not work, disable to Matlab psycho toolbox in the [nfblab_option.m](src/nfblab_option.m) file (set to false) 
 
 ```Matlab
 nfblab_process('baseline', 'asrfile.mat', 'baseline_eeg_output.mat')
