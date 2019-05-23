@@ -33,3 +33,7 @@ Tested on Windows. It should run on Mac if you can find the LSL drivers for your
 # Publication
 
 This program was used to collect data on 24 subjects in a double blinded protocol (12 neurofeedback and 12 controls). 192 sessions were recorded. The publication is pending. An example of a session is visible here https://youtu.be/7lrMgpV1FSI.
+
+# Install and getting started
+
+See the [Install.md] documentation.
