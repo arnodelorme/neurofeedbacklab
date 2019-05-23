@@ -13,7 +13,7 @@ A Neurofeedback software approach based on Matlab. There is no visual programmin
 
 - Manage subjects and track subjects' progress. Track human errors by checking that new sessions are preceeded by existing previous sessions. Made as much human proof as possible.
 - One computer runs data acquisition and performs the feedback. Assumes that 2 screens are connected to the same PC, one screen for the experimenter and one screen for the participant. Can also be set up a single screen program that the experimenter and participant share.
-- Allow blinded protocol where a session from one subject is replayed to another subject (the data from the sham subject is recorded as if he was doing the task but the feedback from another subject is shownn).
+- Allow blinded protocol where data from a session from one subject is used for another subject (the data from the sham subject is recorded as if he was doing the task but the feedback from another subject is shownn).
 - Run n sessions over m days. The first session of each day is always a baseline used for artifact rejection below.
 - Adaptive filtering with minimum phase distortion
 - Automated artifact rejection using Artifact Subspace Reconstruction. This methods uses PCA to find artifactual sections of data, then reconstruct a clean signal based on the statistics of the basline. https://sccn.ucsd.edu/~scott/pdf/Mullen_BCI13.pdf
