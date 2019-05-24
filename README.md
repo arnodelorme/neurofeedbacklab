@@ -1,15 +1,15 @@
-# Neurofeedbacklab:
+# Neurofeedbacklab
 
 A Neurofeedback software approach based on Matlab. There is no visual programming languager, so it is only sutable for those who do not fear source code and the command line. Programming experience is needed to fine tune the protocol parameters but not for running experiments.
 
-# Dependencies:
+# Dependencies
 
 - Matlab (including student versions)
 - Matlab psychophysics toolbox http://psychtoolbox.org/
 - BCILAB https://sccn.ucsd.edu/wiki/BCILAB
 - LSL (lab streaming layer) https://github.com/sccn/labstreaminglayer
 
-# Features:
+# Features
 
 - Manage subjects and track subjects' progress. Track human errors by checking that new sessions are preceeded by existing previous sessions. Made as much human proof as possible.
 - One computer runs data acquisition and performs the feedback. Assumes that 2 screens are connected to the same PC, one screen for the experimenter and one screen for the participant. Can also be set up a single screen program that the experimenter and participant share.
@@ -22,7 +22,7 @@ A Neurofeedback software approach based on Matlab. There is no visual programmin
 - Save raw data and all transformed measures (spectral decomposition, feedback) in Matlab files for each subject
 - Import the data in EEGLAB (scripts available upon request but not included in this project)
 
-# Hardware:
+# Hardware
 
 Any EEG system supported by LSL (this includes BIOSEMI, EGI, Neuroscan, Brainproducts, Emotiv, Cognionics, Enobio, Muse etc...). See the full list at https://github.com/sccn/labstreaminglayer/wiki/SupportedDevices.wiki. Allow using ADR101 board (http://www.ontrak.net/adr101.htm) if you want to be able to send events from the presentation computer to the EEG system. These boards translate serial information to parallel that can be used with EEG systems. Plan for a relatively powerfull multi-core computer to perform both data acquisition and feedback. The current program was used with a BIOSEMI 64-channel system and a 4-core Dell workstation with 8Gb of RAM.
 
