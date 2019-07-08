@@ -1,4 +1,4 @@
-sadf
+
 % stationary data (continuous)
 %[EEG state ] = exp_eval(flt_fir('Signal', EEG, 'Frequencies', [0.9 1.1],'Mode', 'highpass', ))
 [EEG state ] = exp_eval(flt_fir( EEG, [0.9 1.1],'highpass', 'zero-phase', -20, -20))

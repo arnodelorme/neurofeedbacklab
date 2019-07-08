@@ -11,17 +11,18 @@ if ~strcmpi(runtype, 'trial') && ~strcmpi(runtype, 'baseline')
 elseif strcmpi(runtype, 'trial')
     if nargin < 3
         error('Need at least 3 arguments in trial mode');
-    end;
+    end
 elseif strcmpi(runtype, 'baseline')
     if nargin < 2
         error('Need at least 2 arguments in baseline mode');
-    end;
-end;
+    end
+end
 if nchans ~= 8 && nchans ~= 128 && nchans ~= 64
     error('nchans must be 8, 64 or 128')
-end;
+end
 
 dataBuffer = zeros(length(chans), (windowSize*2)/srate*srateHardware);
+dataBufferPointer = 1;
 
 dataAccu = zeros(length(chans), (sessionDuration+3)*srate); % to save the data
 dataAccuPointer = 1;
@@ -65,8 +66,8 @@ if strcmpi(runtype, 'trial')
         xpos2 = displaysize(3)-xpos1;
         ypos2 = displaysize(4)-ypos1;
         colArray = [ [10:250] [250:-1:128] [128:250] ];
-    end;
-end;
+    end
+end
 
 %EEG.icaact = [];
 %disp('Training ASR, please wait...');
@@ -97,7 +98,7 @@ if adrBoard
     fwrite(serialPort, ['SPA11111111' char(13)]);
     pause(0.05);
     fwrite(serialPort, ['SPA00000000' char(13)]);
-end;
+end
 
 chunkMarker   = zeros(1, sessionDuration*10);
 chunkPower    = zeros(1, sessionDuration*10);
@@ -120,8 +121,8 @@ while toc < sessionDuration
         else
             dataBuffer(:,dataBufferPointer:dataBufferPointer+size(chunk,2)-1) = chunk(chans,:);
             dataBufferPointer = dataBufferPointer+size(chunk,2);
-        end;
-    end;
+        end
+    end
     
     if dataBufferPointer > chunkSize*winPerSec
         
@@ -160,7 +161,7 @@ while toc < sessionDuration
             % apply ASR and update state
             [EEG.data, stateAsr]= asr_process(EEG.data, EEG.srate, stateAsr);
             dataAccu(:, dataAccuPointer:dataAccuPointer+size(EEG.data,2)-1) = EEG.data;
-        end;
+        end
         dataAccuPointer = dataAccuPointer + size(EEG.data,2);
         chunkMarker(chunkCount) = dataAccuPointer;
         
@@ -179,19 +180,19 @@ while toc < sessionDuration
         feedbackValTmp = (X-dynRange(1))/totalRange;
         if feedbackValTmp > 1, dynRange(2) = dynRange(2)+dynRangeInc*totalRange; feedbackValTmp = 1;
         else                   dynRange(2) = dynRange(2)-dynRangeDec*totalRange;
-        end;
+        end
         if feedbackValTmp < 0, dynRange(1) = dynRange(1)-dynRangeInc*totalRange; feedbackValTmp = 0;
         else                   dynRange(1) = dynRange(1)+dynRangeDec*totalRange;
-        end;
+        end
         if feedbackValTmp<feedbackVal
             if abs(feedbackValTmp-feedbackVal) > maxChange, feedbackVal = feedbackVal-maxChange;
             else                                            feedbackVal = feedbackValTmp;
-            end;
+            end
         else
             if abs(feedbackValTmp-feedbackVal) > maxChange, feedbackVal = feedbackVal+maxChange;
             else                                            feedbackVal = feedbackValTmp;
-            end;
-        end;
+            end
+        end
         chunkFeedback(chunkCount) = feedbackVal;
         chunkDynRange(:,chunkCount) = dynRange;
         chunkCount = chunkCount+1;
@@ -205,23 +206,23 @@ while toc < sessionDuration
                     binval = [ '00000000' dec2bin(colIndx) ];
                     binval = binval(end-7:end);
                     fwrite(serialPort, ['SPA00000010' char(13)]); %dead
-                end;           
+                end           
                 Screen('FillPoly', window ,[0 0 colArray(colIndx)], [ xpos1 ypos1; xpos2 ypos1; xpos2 ypos2; xpos1 ypos2], 1);
                 Screen('Flip', window);
                 if adrBoard
                     fwrite(serialPort, ['SPA00000000' char(13)]);
-                end;
-            end;
-        end;
+                end
+            end
+        end
         pause(0.1);
-    end;
+    end
 end
 
 if adrBoard
     fwrite(serialPort, ['SPA11111111' char(13)]);
     pause(0.05);
     fwrite(serialPort, ['SPA00000000' char(13)]);
-end;
+end
 
 chunkMarker(chunkCount:end) = [];
 chunkPower(chunkCount:end) = [];
@@ -239,9 +240,9 @@ else
     save('-mat', fileNameOut, 'stateAsr', 'dataAccu', 'chunkMarker', 'chunkPower', 'chunkFeedback', 'chunkDynRange', 'srate', 'theta' );
     if psychoToolbox
         Screen('Closeall');
-    end;
-end;
+    end
+end
 
 if adrBoard
     fclose(serialPort);
-end;
+end
