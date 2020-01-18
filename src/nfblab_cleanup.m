@@ -6,6 +6,9 @@ try
     fclose(serialPort);
     disp('Closing serial port');
 catch
-end;
+end
 
-Screen('Closeall');
+try
+    Screen('Closeall');
+catch
+end
