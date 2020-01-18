@@ -40,9 +40,9 @@ nfblab_options;
 % decode input parameters and overwrite defaults
 for iArg = 1:2:length(varargin)
     if isstr(varargin{iArg+1})
-        eval( [ varargin{iArg} ' = ' varargin{iArg} ] );
+        eval( [ varargin{iArg} ' = ''' varargin{iArg+1} ''';'] );
     else
-        eval( [ varargin{iArg} ' = ' varargin{iArg} ] );
+        eval( [ varargin{iArg} ' = ' num2str(varargin{iArg+1}) ';' ] );
     end
 end
 if ~exist('runmode')
