@@ -319,6 +319,8 @@ while toc < sessionDuration
             fprintf('.');
         end
         pause(0.1);
+    else 
+        pause(0.1);
     end
 end
 fprintf('\n');

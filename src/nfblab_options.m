@@ -7,7 +7,7 @@ TCPbinarythreshold = NaN; % binary threshold from 0 to 1 to apply before
                           % sending feedback. If NaN, send the raw value.
 
 lsltype = ''; % use empty if you cannot connect to your system
-lslname = 'EEG'; % this is the name of the stream that shows in Lab Recorder
+lslname = 'WS-default'; % this is the name of the stream that shows in Lab Recorder
               % if empty, it will only use the type above
               % USE lsl_resolve_byprop(lib, 'type', lsltype, 'name', lslname) 
               % to connect to the stream. If you cannot connect
@@ -22,16 +22,16 @@ baselineSessionDuration = 60; % duration of baseline in second (the baseline is 
 sessionDuration = 60*5; % regular (trial) sessions - here 5 minutes
 
 % data acquisition parameters
-chans    = 1:4; % indices of data channels
+chans    = [1:24]; % indices of data channels
 averefflag = false; % compute average reference before chanmask below
-chanmask = [1 0 -1 0]; % spatial filter for feedback
+chanmask = zeros(1,24); chanmask(1) = 1; % spatial filter for feedback
 
 % data processing parameters
-srateHardware = 512; % sampling rate of the hardware
-srate         = 256; % sampling rate for processing data (must divide srateHardware)
-windowSize    = 256; % length of window size for FFT (if equal to srate then 1 second)
-nfft          = 256; % length of FFT - allows FFT padding if necessary
-windowInc     = 64;  % window increment - in this case update every 1/4 second
+srateHardware = 304; % sampling rate of the hardware
+srate         = 304; % sampling rate for processing data (must divide srateHardware)
+windowSize    = 304; % length of window size for FFT (if equal to srate then 1 second)
+nfft          = 304; % length of FFT - allows FFT padding if necessary
+windowInc     = 76;  % window increment - in this case update every 1/4 second
 
 % feedback parameters
 freqrange      = [3.5 6.5]; % Frequency range of interest. This program does
