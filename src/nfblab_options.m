@@ -4,6 +4,7 @@ adrBoard       = false;  % Toggle to true if using ADR101 board to send events t
 TCPIP          = false;  % send feedback to client through TCP/IP socket
 TCPport        = 9789;   
 
+streamFile = ''; % if not empty stream a file instead of using LSL
 lsltype = ''; % use empty if you cannot connect to your system
 lslname = 'EEG'; % this is the name of the stream that shows in Lab Recorder
               % if empty, it will only use the type above
@@ -41,8 +42,8 @@ feedbackMode = 'threshold';
 % activity going above or below a threshold and parameter for how this
 % threshold evolve. The output is binary
 threshold = 10; % intial value for threshold
-threshold_mem = 0.75; % i.e. new_threshold = current_value * 0.25 + old_threshold * 0.75 
-threshold_mode = 'go'; % can be 'go' (1 when above threshold, 0 otherwise) 
+thresholdMem = 0.75; % i.e. new_threshold = current_value * 0.25 + old_threshold * 0.75 
+thresholdMode = 'go'; % can be 'go' (1 when above threshold, 0 otherwise) 
                        % or 'stop' (1 when below threshold, 0 otherwise) 
                             
 % mode = 'dynrange';
@@ -70,8 +71,15 @@ if false % alternate configuration
     disp('CAREFUL: using alternate configuration in nfblab_option');
 end
 
+if true % alternate configuration
+    streamFile = 'C:\Users\labadmin\Desktop\eeglab\sample_data\eeglab_data.set'; % if not empty stream a file instead of using LSL
+    chans    = [1:32]; % indices of data channels
+    chanmask = zeros(1,32); chanmask(1) = 1; % spatial filter for feedback
+    disp('CAREFUL: using alternate configuration in nfblab_option');
+end
+
 if ispc
     lslpath = 'Z:\data\matlab\BCILAB\dependencies\liblsl-Matlab';
 else
     lslpath = '/data/matlab/BCILAB/dependencies/liblsl-Matlab';
-end                      
+end   

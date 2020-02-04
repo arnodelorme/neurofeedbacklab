@@ -112,16 +112,21 @@ end
 %                                        % functions in that folder
 
 % instantiate the library
-disp('Loading the library...');
-lib = lsl_loadlib();
+if isempty(streamFile)
+    disp('Loading the library...');
+    lib = lsl_loadlib();
 
-% resolve a stream...
-disp('Resolving an EEG stream...');
-result = {};
-result = nfblab_findlslstream(lib,lsltype,lslname);
-disp('Opening an inlet...');
-inlet = lsl_inlet(result{1});
-disp('Now receiving chunked data...');
+    % resolve a stream...
+    disp('Resolving an EEG stream...');
+    result = {};
+    result = nfblab_findlslstream(lib,lsltype,lslname);
+    disp('Opening an inlet...');
+    inlet = lsl_inlet(result{1});
+    disp('Now receiving chunked data...');
+else
+    streamFileData = pop_loadset(streamFile);
+    eegPointer     = 1;
+end
 
 % create TCP/IP socket
 if TCPIP
@@ -196,13 +201,23 @@ chunkDynRange = zeros(2, sessionDuration*10);
 chunkFeedback = zeros(1, sessionDuration*10);
 chunkCount    = 1;
 
+warning('off', 'MATLAB:subscripting:noSubscriptsSpecified'); % for ASR
 while toc < sessionDuration
     % get chunk from the inlet
-    [chunk,stamps] = inlet.pull_chunk();
+    if isempty(streamFile)
+        [chunk,~] = inlet.pull_chunk();
+    else
+        if eegPointer+31 > size(streamFileData.data,2)
+            break;
+        else
+            chunk = streamFileData.data(:,eegPointer:eegPointer+31);
+            eegPointer = eegPointer+32;
+        end
+    end
     
     % fill buffer
     if ~isempty(chunk) && size(chunk,2) > 1
-        %fprintf('%d samples\n', size(chunk,2));
+        % fprintf('%d samples (%1.10f)\n', size(chunk,2), sum(chunk(:,1)));
 
         if dataBufferPointer+size(chunk,2) > size(dataBuffer,2)
             disp('Buffer overrun');
@@ -217,6 +232,7 @@ while toc < sessionDuration
     if dataBufferPointer > chunkSize*winPerSec
         
         % Decimate
+        fprintf('(%1.10f) ', sum(dataBuffer(:,1)));
         if srateHardware == srate
             EEG.data = dataBuffer(:,1:chunkSize*winPerSec);            
         elseif srateHardware == 2*srate
@@ -229,8 +245,9 @@ while toc < sessionDuration
             error('Cannot convert sampling rate');
         end
         
-        % shift 1 block
-        dataBuffer(:, 1:chunkSize*(winPerSec-1)) = dataBuffer(:, chunkSize+1:chunkSize*winPerSec);
+        % shift 1 window block of size chunkSize
+        dataBuffer(:, 1:end-chunkSize) = dataBuffer(:, chunkSize+1:end);
+        dataBuffer(:, end-chunkSize+1:end) = 0; % not necessary but good for debugging
         dataBufferPointer = dataBufferPointer-chunkSize;
         
         % filter data
@@ -269,38 +286,40 @@ while toc < sessionDuration
         X        = mean(10*log10(abs(dataSpec).^2));
         chunkPower(chunkCount) = X;
         
-        if strcmpi(feedbackMode, 'dynrange')
-            % assess if value position within a range
-            % and return output from 0 to 1
-            totalRange = dynRange(2)-dynRange(1);
-            feedbackValTmp = (X-dynRange(1))/totalRange;
-            if feedbackValTmp > 1, dynRange(2) = dynRange(2)+dynRangeInc*totalRange; feedbackValTmp = 1;
-            else                   dynRange(2) = dynRange(2)-dynRangeDec*totalRange;
-            end
-            if feedbackValTmp < 0, dynRange(1) = dynRange(1)-dynRangeInc*totalRange; feedbackValTmp = 0;
-            else                   dynRange(1) = dynRange(1)+dynRangeDec*totalRange;
-            end
-            if feedbackValTmp<feedbackVal
-                if abs(feedbackValTmp-feedbackVal) > maxChange, feedbackVal = feedbackVal-maxChange;
-                else                                            feedbackVal = feedbackValTmp;
+        if ~isinf(X)
+            if strcmpi(feedbackMode, 'dynrange')
+                % assess if value position within a range
+                % and return output from 0 to 1
+                totalRange = dynRange(2)-dynRange(1);
+                feedbackValTmp = (X-dynRange(1))/totalRange;
+                if feedbackValTmp > 1, dynRange(2) = dynRange(2)+dynRangeInc*totalRange; feedbackValTmp = 1;
+                else                   dynRange(2) = dynRange(2)-dynRangeDec*totalRange;
                 end
-            else
-                if abs(feedbackValTmp-feedbackVal) > maxChange, feedbackVal = feedbackVal+maxChange;
-                else                                            feedbackVal = feedbackValTmp;
+                if feedbackValTmp < 0, dynRange(1) = dynRange(1)-dynRangeInc*totalRange; feedbackValTmp = 0;
+                else                   dynRange(1) = dynRange(1)+dynRangeDec*totalRange;
                 end
+                if feedbackValTmp<feedbackVal
+                    if abs(feedbackValTmp-feedbackVal) > maxChange, feedbackVal = feedbackVal-maxChange;
+                    else                                            feedbackVal = feedbackValTmp;
+                    end
+                else
+                    if abs(feedbackValTmp-feedbackVal) > maxChange, feedbackVal = feedbackVal+maxChange;
+                    else                                            feedbackVal = feedbackValTmp;
+                    end
+                end
+                chunkDynRange(:,chunkCount) = dynRange;
+                fprintf('Spectral power %2.3f - output %1.2f - %1.2f [%1.2f %1.2f]\n', X, feedbackVal, feedbackValTmp, dynRange(1), dynRange(2));
+            elseif strcmpi(feedbackMode, 'threshold')
+                % simply assess if value above threshold
+                % and return binary output
+                feedbackVal = X > threshold;
+                if strcmpi(thresholdMode, 'stop')
+                    feedbackVal = ~feedbackVal;
+                end
+                threshold = threshold*thresholdMem + X*(1-thresholdMem);
+                chunkDynRange(:,chunkCount) = [threshold; threshold];
+                fprintf('Spectral power %2.3f - output %1.0f - threshold %1.2f\n', X, feedbackVal, threshold);
             end
-            chunkDynRange(:,chunkCount) = dynRange;
-            fprintf('Spectral power %2.3f - output %1.2f - %1.2f [%1.2f %1.2f]\n', X, feedbackVal, feedbackValTmp, dynRange(1), dynRange(2));
-        elseif strcmpi(feedbackMode, 'threshold')
-            % simply assess if value above threshold
-            % and return binary output
-            feedbackVal = X > threshold;
-            if strmcpi(threshold_mode, 'stop')
-                feedbackVal = ~feedbackVal;
-            end
-            threshold = threshold*threshold_mem + X*(1-threshold_mem);
-            chunkDynRange(:,chunkCount) = [threshold; threshold];
-            fprintf('Spectral power %2.3f - output %1.0f - threshold %1.2f\n', X, feedbackVal, threshold);
         end
         chunkFeedback(chunkCount) = feedbackVal;
         chunkCount = chunkCount+1;
