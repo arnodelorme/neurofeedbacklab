@@ -266,30 +266,43 @@ while toc < sessionDuration
         X        = mean(10*log10(abs(dataSpec).^2));
         chunkPower(chunkCount) = X;
         
-        % compute feedback value between 0 and 1
-        totalRange = dynRange(2)-dynRange(1);
-        feedbackValTmp = (X-dynRange(1))/totalRange;
-        if feedbackValTmp > 1, dynRange(2) = dynRange(2)+dynRangeInc*totalRange; feedbackValTmp = 1;
-        else                   dynRange(2) = dynRange(2)-dynRangeDec*totalRange;
-        end
-        if feedbackValTmp < 0, dynRange(1) = dynRange(1)-dynRangeInc*totalRange; feedbackValTmp = 0;
-        else                   dynRange(1) = dynRange(1)+dynRangeDec*totalRange;
-        end
-        if feedbackValTmp<feedbackVal
-            if abs(feedbackValTmp-feedbackVal) > maxChange, feedbackVal = feedbackVal-maxChange;
-            else                                            feedbackVal = feedbackValTmp;
+        if strcmpi(feedbackMode, 'dynrange')
+            % assess if value position within a range
+            % and return output from 0 to 1
+            totalRange = dynRange(2)-dynRange(1);
+            feedbackValTmp = (X-dynRange(1))/totalRange;
+            if feedbackValTmp > 1, dynRange(2) = dynRange(2)+dynRangeInc*totalRange; feedbackValTmp = 1;
+            else                   dynRange(2) = dynRange(2)-dynRangeDec*totalRange;
             end
-        else
-            if abs(feedbackValTmp-feedbackVal) > maxChange, feedbackVal = feedbackVal+maxChange;
-            else                                            feedbackVal = feedbackValTmp;
+            if feedbackValTmp < 0, dynRange(1) = dynRange(1)-dynRangeInc*totalRange; feedbackValTmp = 0;
+            else                   dynRange(1) = dynRange(1)+dynRangeDec*totalRange;
             end
+            if feedbackValTmp<feedbackVal
+                if abs(feedbackValTmp-feedbackVal) > maxChange, feedbackVal = feedbackVal-maxChange;
+                else                                            feedbackVal = feedbackValTmp;
+                end
+            else
+                if abs(feedbackValTmp-feedbackVal) > maxChange, feedbackVal = feedbackVal+maxChange;
+                else                                            feedbackVal = feedbackValTmp;
+                end
+            end
+            chunkDynRange(:,chunkCount) = dynRange;
+            fprintf('Spectral power %2.3f - output %1.2f - %1.2f [%1.2f %1.2f]\n', X, feedbackVal, feedbackValTmp, dynRange(1), dynRange(2));
+        elseif strcmpi(feedbackMode, 'threshold')
+            % simply assess if value above threshold
+            % and return binary output
+            feedbackVal = X > threshold;
+            if strmcpi(threshold_mode, 'stop')
+                feedbackVal = ~feedbackVal;
+            end
+            threshold = threshold*threshold_mem + X*(1-threshold_mem);
+            chunkDynRange(:,chunkCount) = [threshold; threshold];
+            fprintf('Spectral power %2.3f - output %1.0f - threshold %1.2f\n', X, feedbackVal, threshold);
         end
         chunkFeedback(chunkCount) = feedbackVal;
-        chunkDynRange(:,chunkCount) = dynRange;
         chunkCount = chunkCount+1;
         
         if  strcmpi(runmode, 'trial')
-            fprintf('Spectral power %2.3f - output %1.2f - %1.2f [%1.2f %1.2f]\n', X, feedbackVal, feedbackValTmp, dynRange(1), dynRange(2));
 
             % visual output through psychoToolbox
             if psychoToolbox

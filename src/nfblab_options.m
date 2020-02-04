@@ -3,11 +3,9 @@ adrBoard       = false; % Toggle to true if using ADR101 board to send events to
                         % EEG amplifier
 TCPIP          = true;  % send feedback to client through TCP/IP socket
 TCPport        = 9789;   
-TCPbinarythreshold = NaN; % binary threshold from 0 to 1 to apply before 
-                          % sending feedback. If NaN, send the raw value.
 
 lsltype = ''; % use empty if you cannot connect to your system
-lslname = 'WS-default'; % this is the name of the stream that shows in Lab Recorder
+lslname = 'EEG'; % this is the name of the stream that shows in Lab Recorder
               % if empty, it will only use the type above
               % USE lsl_resolve_byprop(lib, 'type', lsltype, 'name', lslname) 
               % to connect to the stream. If you cannot connect
@@ -22,9 +20,9 @@ baselineSessionDuration = 60; % duration of baseline in second (the baseline is 
 sessionDuration = 60*5; % regular (trial) sessions - here 5 minutes
 
 % data acquisition parameters
-chans    = [1:24]; % indices of data channels
+chans    = [1:4]; % indices of data channels
 averefflag = false; % compute average reference before chanmask below
-chanmask = zeros(1,24); chanmask(1) = 1; % spatial filter for feedback
+chanmask = zeros(1,4); chanmask(1) = 1; % spatial filter for feedback
 
 % data processing parameters
 srateHardware = 304; % sampling rate of the hardware
@@ -37,6 +35,20 @@ windowInc     = 76;  % window increment - in this case update every 1/4 second
 freqrange      = [3.5 6.5]; % Frequency range of interest. This program does
                             % not allow inhibition at other frequencies
                             % although it could be modified to do so
+
+feedbackMode = 'threshold';
+% parameters for threshold change. The threshold mode simply involve
+% activity going above or below a threshold and parameter for how this
+% threshold evolve. The output is binary
+threshold = 10; % intial value for threshold
+threshold_mem = 0.75; % i.e. new_threshold = current_value * 0.25 + old_threshold * 0.75 
+threshold_mode = 'go'; % can be 'go' (1 when above threshold, 0 otherwise) 
+                       % or 'stop' (1 when below threshold, 0 otherwise) 
+                            
+% mode = 'dynrange';
+% parameters for dynamic range change. In this mode, the output is continuous
+% between 0 and 1 (position in the range). Parameters control how the range
+% change
 maxChange      = 0.05;      % Cap for change in feedback between processed 
                             % windows every 1/4 sec. feedback is between 0 and 1
                             % so this is 5% here
