@@ -324,13 +324,8 @@ while toc < sessionDuration
             
             % output through TCP/IP
             if TCPIP
-                outVal = feedbackVal;
-                if ~isnan(TCPbinarythreshold)
-                    outVal = outVal > TCPbinarythreshold;
-                end
-                fprintf('Feedback %s sent to client, ', num2str(outVal));
-                %     outToClient.println(num2str(outVal));
-                outToClient.println(num2str(round(rand(1))));
+                fprintf('Feedback %s sent to client, ', num2str(feedbackVal));
+                outToClient.println(num2str(feedbackVal));
             end
         else
             fprintf('.');

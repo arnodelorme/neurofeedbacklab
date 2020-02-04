@@ -1,7 +1,7 @@
 psychoToolbox  = false;  % Toggle to false for testing without psych toolbox
-adrBoard       = false; % Toggle to true if using ADR101 board to send events to the
-                        % EEG amplifier
-TCPIP          = true;  % send feedback to client through TCP/IP socket
+adrBoard       = false;  % Toggle to true if using ADR101 board to send events to the
+                         % EEG amplifier
+TCPIP          = false;  % send feedback to client through TCP/IP socket
 TCPport        = 9789;   
 
 lsltype = ''; % use empty if you cannot connect to your system
@@ -62,6 +62,14 @@ dynRangeDec    = 0.01;      % Decrease in dynamical range in percent if the
 ntrials = 8; % number of trials per day
 ndays   = 8; % number of days of training
        
+if false % alternate configuration
+    chans    = [1:24]; % indices of data channels
+    chanmask = zeros(1,24); chanmask(1) = 1; % spatial filter for feedback
+    TCPIP    = true;
+    lslname = 'WS-default'; % this is the name of the stream that shows in Lab Recorder
+    disp('CAREFUL: using alternate configuration in nfblab_option');
+end
+
 if ispc
     lslpath = 'Z:\data\matlab\BCILAB\dependencies\liblsl-Matlab';
 else
