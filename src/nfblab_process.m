@@ -36,6 +36,8 @@
 
 function nfblab_process(varargin)
 nfblab_options;
+import java.io.*;
+import java.net.*;
 
 % decode input parameters and overwrite defaults
 for iArg = 1:2:length(varargin)
@@ -123,9 +125,10 @@ disp('Now receiving chunked data...');
 
 % create TCP/IP socket
 if TCPIP
-    %kkSocket  = ServerSocket( TCPport );
+    kkSocket  = ServerSocket( TCPport );
     fprintf('Trying to accept connection from client (if program get stuck here, check client)...\n');
-    %connectionSocket = kkSocket.accept();
+    connectionSocket = kkSocket.accept();
+    outToClient = PrintWriter(connectionSocket.getOutputStream(), true);
 end
 
 % select calibration data
@@ -326,7 +329,8 @@ while toc < sessionDuration
                     outVal = outVal > TCPbinarythreshold;
                 end
                 fprintf('Feedback %s sent to client, ', num2str(outVal));
-                %outToClient.println(num2str(outVal));
+                %     outToClient.println(num2str(outVal));
+                outToClient.println(num2str(round(rand(1))));
             end
         else
             fprintf('.');
