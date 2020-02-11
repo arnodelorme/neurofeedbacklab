@@ -84,7 +84,8 @@ end
 dataBuffer = zeros(length(chans), (windowSize*2)/srate*srateHardware);
 dataBufferPointer = 1;
 
-dataAccu = zeros(length(chans), (sessionDuration+3)*srate); % to save the data
+dataAccuOri = zeros(length(chans), (sessionDuration+3)*srate); % to save the data
+dataAccu    = zeros(length(chans), (sessionDuration+3)*srate); % to save the data
 dataAccuPointer = 1;
 feedbackVal    = 0.5;       % initial feedback value
 
@@ -271,6 +272,7 @@ while toc < sessionDuration
             dataAccu(:, dataAccuPointer:dataAccuPointer+size(EEG.data,2)-1) = EEG.data;
         else
             % apply ASR and update state
+            dataAccuOri(:, dataAccuPointer:dataAccuPointer+size(EEG.data,2)-1) = EEG.data;
             [EEG.data, stateAsr]= asr_process(EEG.data, EEG.srate, stateAsr);
             dataAccu(:, dataAccuPointer:dataAccuPointer+size(EEG.data,2)-1) = EEG.data;
         end
@@ -380,7 +382,7 @@ if strcmpi(runmode, 'baseline')
     fprintf('Saving file %s\n', fileNameAsr);
 else 
     % close text file
-    save('-mat', fileNameOut, 'stateAsr', 'dataAccu', 'chunkMarker', 'chunkPower', 'chunkFeedback', 'chunkDynRange', 'srate', 'freqrange' );
+    save('-mat', fileNameOut, 'stateAsr', 'dataAccu', 'dataAccuOri', 'chunkMarker', 'chunkPower', 'chunkFeedback', 'chunkDynRange', 'srate', 'freqrange' );
     if psychoToolbox
         Screen('Closeall');
     end
