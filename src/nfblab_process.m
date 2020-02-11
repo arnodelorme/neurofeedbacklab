@@ -134,6 +134,7 @@ if TCPIP
     fprintf('Trying to accept connection from client (if program get stuck here, check client)...\n');
     connectionSocket = kkSocket.accept();
     outToClient = PrintWriter(connectionSocket.getOutputStream(), true);
+    oldFeedback = 0;
 end
 
 % select calibration data
@@ -343,8 +344,11 @@ while toc < sessionDuration
             
             % output through TCP/IP
             if TCPIP
-                fprintf('Feedback %s sent to client, ', num2str(feedbackVal));
-                outToClient.println(num2str(feedbackVal));
+                if feedbackVal ~= oldFeedback
+                    fprintf('Feedback %s sent to client, ', num2str(feedbackVal));
+                    outToClient.println(num2str(feedbackVal));
+                    oldFeedback = feedbackVal;
+                end
             end
         else
             fprintf('.');
