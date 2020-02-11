@@ -72,7 +72,8 @@ if false % alternate configuration
 end
 
 if true % alternate configuration
-    streamFile = 'C:\Users\labadmin\Desktop\eeglab\sample_data\eeglab_data.set'; % if not empty stream a file instead of using LSL
+    p = fileparts(which('nfblab_options.m'));
+    streamFile = fullfile(p, 'eeglab_data.set'); % if not empty stream a file instead of using LSL
     chans    = [1:32]; % indices of data channels
     chanmask = zeros(1,32); chanmask(1) = 1; % spatial filter for feedback
     disp('CAREFUL: using alternate configuration in nfblab_option');
