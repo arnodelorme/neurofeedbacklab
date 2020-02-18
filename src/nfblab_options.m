@@ -6,7 +6,8 @@ TCPport        = 9789;
 
 streamFile = ''; % if not empty stream a file instead of using LSL
 lsltype = ''; % use empty if you cannot connect to your system
-lslname = 'EEG'; % this is the name of the stream that shows in Lab Recorder
+lslname = 'CGX Dev Kit DK-0090'; % this is the name of the stream that shows in Lab Recorder
+% lslname = 'WS-default'; % this is the name of the stream that shows in Lab Recorder
               % if empty, it will only use the type above
               % USE lsl_resolve_byprop(lib, 'type', lsltype, 'name', lslname) 
               % to connect to the stream. If you cannot connect
@@ -18,20 +19,26 @@ defaultNameAsr = fileNameAsr;
 % sessions parameters
 baselineSessionDuration = 60; % duration of baseline in second (the baseline is used
                               % to train the artifact removal ASR function)
-sessionDuration = 60*5; % regular (trial) sessions - here 5 minutes
+sessionDuration = 60*2; % regular (trial) sessions - here 5 minutes
 
 % data acquisition parameters
-chans    = [1:4]; % indices of data channels
+chans    = [1:8]; % indices of data channels
 averefflag = false; % compute average reference before chanmask below
 chanmask = zeros(1,4); chanmask(1) = 1; % spatial filter for feedback
 
-% data processing parameters
-srateHardware = 304; % sampling rate of the hardware
-srate         = 304; % sampling rate for processing data (must divide srateHardware)
-windowSize    = 304; % length of window size for FFT (if equal to srate then 1 second)
-nfft          = 304; % length of FFT - allows FFT padding if necessary
-windowInc     = 76;  % window increment - in this case update every 1/4 second
+% data processing parameters for Wearable Sensing AMP
+%srateHardware = 304; % sampling rate of the hardware
+%srate         = 304; % sampling rate for processing data (must divide srateHardware)
+%windowSize    = 304; % length of window size for FFT (if equal to srate then 1 second)
+%nfft          = 304; % length of FFT - allows FFT padding if necessary
+%windowInc     = 76;  % window increment - in this case update every 1/4 second
 
+% data processing parameters for CGX AMP
+srateHardware = 500; % sampling rate of the hardware
+srate         = 500; % sampling rate for processing data (must divide srateHardware)
+windowSize    = 500; % length of window size for FFT (if equal to srate then 1 second)
+nfft          = 500; % length of FFT - allows FFT padding if necessary
+windowInc     = 125;  % window increment - in this case update every 1/4 second
 % feedback parameters
 freqrange      = [3.5 6.5]; % Frequency range of interest. This program does
                             % not allow inhibition at other frequencies
@@ -63,21 +70,40 @@ dynRangeDec    = 0.01;      % Decrease in dynamical range in percent if the
 ntrials = 8; % number of trials per day
 ndays   = 8; % number of days of training
        
-if false % alternate configuration
-    chans    = [1:24]; % indices of data channels
-    chanmask = zeros(1,24); chanmask(1) = 1; % spatial filter for feedback
-    TCPIP    = true;
-    lslname = 'WS-default'; % this is the name of the stream that shows in Lab Recorder
-    disp('CAREFUL: using alternate configuration in nfblab_option');
-end
+%custom_config = 'none';
+custom_config = '8-channel-cgs';
+%custom_config = '24-channel-ws';
+%custom_config = '24-channel-cg';
+%custom_config = '32-channel-cg';
+%custom_config = '64-channel';
+%custom_config = 'offline-file';
 
-if true % alternate configuration
-    p = fileparts(which('nfblab_options.m'));
-    streamFile = fullfile(p, 'eeglab_data.set'); % if not empty stream a file instead of using LSL
-    chans    = [1:32]; % indices of data channels
-    chanmask = zeros(1,32); chanmask(1) = 1; % spatial filter for feedback
-    TCPIP    = true;
-    disp('CAREFUL: using alternate configuration in nfblab_option');
+switch custom_config
+    case 'none'
+    case '24-channel-ws'
+        chans    = [1:24]; % indices of data channels
+        chanmask = zeros(1,24); 
+        chanmask(12) = 1; % C4 spatial filter for feedback
+        chanmask(19) = -1; % Pz
+        TCPIP    = true;
+        lslname = 'WS-default'; % this is the name of the stream that shows in Lab Recorder
+        disp('CAREFUL: using alternate configuration in nfblab_option');
+    case '8-channel-cgs'
+        chans    = [1:8]; % indices of data channels
+        chanmask = zeros(1,8); 
+        chanmask(7) = 1; % A1
+        TCPIP    = true;
+        lslname = 'CGX Dev Kit DK-0090'; % this is the name of the stream that shows in Lab Recorder
+        disp('CAREFUL: using alternate configuration in nfblab_option');
+    case 'offline-file'
+        p = fileparts(which('nfblab_options.m'));
+        streamFile = fullfile(p, 'eeglab_data.set'); % if not empty stream a file instead of using LSL
+        chans    = [1:32]; % indices of data channels
+        chanmask = zeros(1,32); chanmask(1) = 1; % spatial filter for feedback
+        TCPIP    = true;
+        disp('CAREFUL: using alternate configuration in nfblab_option');
+    otherwise 
+        error('Unknown configuration');
 end
 
 if ispc
