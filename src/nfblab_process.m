@@ -100,10 +100,6 @@ feedbackVal    = 0.5;       % initial feedback value
 % if isempty(p)
 %     error('Please install EEGLAB and start EEGLAB before calling that function');
 % end
-p = which('asr_process.m');
-if isempty(p)
-    error('Please install BCILAB and start BCILAB before calling that function');
-end
 % p = which('clean_artifacts.m');
 % if isempty(p)
 %     error('Please install clean_rawdata plugin in EEGLAB');
@@ -125,17 +121,18 @@ if isempty(streamFile)
     inlet = lsl_inlet(result{1});
     disp('Now receiving chunked data...');
 else
-    streamFileData = pop_loadset(streamFile);
+    streamFileData = load('-mat', streamFile);
+    streamFileData = streamFileData.EEG;
     eegPointer     = 1;
 end
 
 % create TCP/IP socket
+oldFeedback = 0;
 if TCPIP
     kkSocket  = ServerSocket( TCPport );
     fprintf('Trying to accept connection from client (if program get stuck here, check client)...\n');
     connectionSocket = kkSocket.accept();
     outToClient = PrintWriter(connectionSocket.getOutputStream(), true);
-    oldFeedback = 0;
 end
 
 % select calibration data
@@ -346,9 +343,19 @@ while toc < sessionDuration
             
             % output through TCP/IP
             if TCPIP
-                if feedbackVal ~= oldFeedback
-                    fprintf('Feedback %s sent to client, ', num2str(feedbackVal));
-                    outToClient.println(num2str(feedbackVal));
+                if strcmpi(TCPformat, 'binstatechange')
+                    if feedbackVal ~= oldFeedback
+                        fprintf('Feedback %s sent to client, ', num2str(feedbackVal));
+                        outToClient.println(num2str(feedbackVal));
+                        oldFeedback = feedbackVal;
+                    end
+                else
+                    tcpipmsg.threshold   = threshold;
+                    tcpipmsg.value       = X;
+                    tcpipmsg.statechange = feedbackVal == oldFeedback;
+                    tmpstr = jsonencode(tcpipmsg);
+                    fprintf('Feedback %s sent to client, ', tmpstr);
+                    outToClient.println(tmpstr);
                     oldFeedback = feedbackVal;
                 end
             end

@@ -1,8 +1,10 @@
+BCILABpath     = 'Z:\data\matlab\BCILAB'; % path to BCILAB toolbox
 psychoToolbox  = false;  % Toggle to false for testing without psych toolbox
 adrBoard       = false;  % Toggle to true if using ADR101 board to send events to the
                          % EEG amplifier
 TCPIP          = false;  % send feedback to client through TCP/IP socket
 TCPport        = 9789;   
+TCPformat      = 'binstatechange';   
 
 streamFile = ''; % if not empty stream a file instead of using LSL
 lsltype = ''; % use empty if you cannot connect to your system
@@ -76,7 +78,7 @@ custom_config = '8-channel-cgs';
 %custom_config = '24-channel-cg';
 %custom_config = '32-channel-cg';
 %custom_config = '64-channel';
-%custom_config = 'offline-file';
+custom_config = 'offline-file';
 
 switch custom_config
     case 'none'
@@ -100,14 +102,25 @@ switch custom_config
         streamFile = fullfile(p, 'eeglab_data.set'); % if not empty stream a file instead of using LSL
         chans    = [1:32]; % indices of data channels
         chanmask = zeros(1,32); chanmask(1) = 1; % spatial filter for feedback
-        TCPIP    = true;
+        TCPIP       = false;
+        TCPformat = 'json';
         disp('CAREFUL: using alternate configuration in nfblab_option');
     otherwise 
         error('Unknown configuration');
 end
 
-if ispc
-    lslpath = 'Z:\data\matlab\BCILAB\dependencies\liblsl-Matlab';
-else
-    lslpath = '/data/matlab/BCILAB/dependencies/liblsl-Matlab';
-end   
+if ~exist(BCILABpath, 'dir')
+    p = fileparts(which('nbflab_options'));
+    BCILABpath = fullfile(p, '..', 'BCILAB');
+    if ~exist(BCILABpath, 'dir')
+        BCILABpath = fullfile(p, '..', '..', 'BCILAB');
+        if ~exist(BCILABpath, 'dir')
+           error('Cannot find BCILAB - set path manually in file nfblab_options.m');
+        end
+    end
+end
+
+addpath(fullfile(BCILABpath, 'dependencies', 'liblsl-Matlab'));
+addpath(fullfile(BCILABpath, 'dependencies', 'liblsl-Matlab', 'bin'));
+addpath(fullfile(BCILABpath, 'dependencies', 'liblsl-Matlab', 'mex', 'build-Christian-PC'));
+addpath(fullfile(BCILABpath, 'dependencies', 'asr-matlab-2012-09-12')); % not required if copied the files above
