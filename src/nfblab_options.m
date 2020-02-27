@@ -73,12 +73,12 @@ ntrials = 8; % number of trials per day
 ndays   = 8; % number of days of training
        
 %custom_config = 'none';
-custom_config = '8-channel-cgs';
-%custom_config = '24-channel-ws';
+%custom_config = '8-channel-cgs';
+custom_config = '24-channel-ws';
 %custom_config = '24-channel-cg';
 %custom_config = '32-channel-cg';
 %custom_config = '64-channel';
-custom_config = 'offline-file';
+%custom_config = 'offline-file';
 
 switch custom_config
     case 'none'
