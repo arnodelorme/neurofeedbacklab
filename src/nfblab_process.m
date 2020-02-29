@@ -36,8 +36,8 @@
 
 function nfblab_process(varargin)
 nfblab_options;
-import java.io.*;
-import java.net.*;
+import java.io.*; % for TCP/IP
+import java.net.*; % for TCP/IP
 
 % decode input parameters and overwrite defaults
 for iArg = 1:2:length(varargin)
@@ -46,6 +46,15 @@ for iArg = 1:2:length(varargin)
     else
         eval( [ varargin{iArg} ' = ' num2str(varargin{iArg+1}) ';' ] );
     end
+end
+if asrFlag == false
+    runmode = 'trial';
+    disp('ASR disabled so skipping baseline');
+else
+    if filtFlag
+        error('ASR does its own filtering, disable ''filtFlag'' flag');
+    end
+    disp('Note: default ASR instroduces a delay - in our experience 1/4 second)');
 end
 if ~exist('runmode')
     s = input('Do you want to run a baseline now (y/n)?', 's');
@@ -65,7 +74,7 @@ if ~strcmpi(runmode, 'trial') && ~strcmpi(runmode, 'baseline')
 elseif strcmpi(runmode, 'baseline')
     sessionDuration = baselineSessionDuration;
 else
-    if defaultNameAsr == fileNameAsr
+    if isequal(defaultNameAsr, fileNameAsr) && asrFlag == true
         asrFiles = dir('asr_filter_*.mat');
         if isempty(asrFiles)
             error('No baseline file found in current folder, run baseline first');
@@ -81,11 +90,12 @@ else
     end
 end
 
-dataBuffer = zeros(length(chans), (windowSize*2)/srate*srateHardware);
+dataBuffer     = zeros(length(chans), (windowSize*2)/srate*srateHardware);
+dataBufferFilt = zeros(length(chans), (windowSize*2)/srate*srateHardware);
 dataBufferPointer = 1;
 
-dataAccuOri = zeros(length(chans), (sessionDuration+3)*srate); % to save the data
-dataAccu    = zeros(length(chans), (sessionDuration+3)*srate); % to save the data
+dataAccuOri  = zeros(length(chans), (sessionDuration+3)*srate); % to save the data
+dataAccuFilt = zeros(length(chans), (sessionDuration+3)*srate); % to save the data
 dataAccuPointer = 1;
 feedbackVal    = 0.5;       % initial feedback value
 
@@ -137,9 +147,17 @@ end
 
 % select calibration data
 if strcmpi(runmode, 'trial')
-    stateAsr = load('-mat', fileNameAsr);
-    dynRange = stateAsr.dynRange;
-    stateAsr = stateAsr.state;
+    if asrFlag
+        stateAsr = load('-mat', fileNameAsr);
+        dynRange = stateAsr.dynRange;
+        if isfield(stateAsr, 'state')
+            stateAsr = stateAsr.state; % legacy
+        else
+            stateAsr = stateAsr.stateAsr;
+        end
+    else
+        stateAsr = [];
+    end
     
     % create screen psycho toolbox
     % ----------------------------
@@ -162,11 +180,9 @@ if strcmpi(runmode, 'trial')
         ypos2 = displaysize(4)-ypos1;
         colArray = [ [10:250] [250:-1:128] [128:250] ];
     end
+else % Baseline
+    asrFlag = false;
 end
-
-%EEG.icaact = [];
-%disp('Training ASR, please wait...');
-%stateAsr = asr_calibrate(EEG.data(:, 1:EEG.srate*60), EEG.srate);
 
 % frequencies for spectral decomposition
 freqs  = linspace(0, srate/2, floor(nfft/2));
@@ -175,13 +191,12 @@ freqRange = intersect( find(freqs >= freqrange(1)), find(freqs <= freqrange(2)) 
 
 %% create a new inlet
 tic;
-totSamples = 0;
 state = [];
-statelp = [];
 EEG = eeg_emptyset;
 EEG.nbchan = length(chans);
 EEG.srate  = srate;
 EEG.xmin   = 0;
+prevX      = [];
 % tmp = load('-mat','chanlocs.mat');
 % EEG.chanlocs = tmp.chanlocs;
 winPerSec = windowSize/windowInc;
@@ -196,12 +211,17 @@ end
 
 chunkMarker   = zeros(1, sessionDuration*10);
 chunkPower    = zeros(1, sessionDuration*10);
-chunkDynRange = zeros(2, sessionDuration*10);
 chunkFeedback = zeros(1, sessionDuration*10);
+chunkDynRange = zeros(2, sessionDuration*10);
+chunkThreshold = zeros(1, sessionDuration*10);
 chunkCount    = 1;
 
 warning('off', 'MATLAB:subscripting:noSubscriptsSpecified'); % for ASR
+lastChunkTime = [];
 while toc < sessionDuration
+    % pause between each loop
+    pause(pauseSecond);
+    
     % get chunk from the inlet
     if isempty(streamFile)
         [chunk,~] = inlet.pull_chunk();
@@ -217,154 +237,187 @@ while toc < sessionDuration
     % fill buffer
     if ~isempty(chunk) && size(chunk,2) > 1
         % fprintf('%d samples (%1.10f)\n', size(chunk,2), sum(chunk(:,1)));
-
+        
+        % truncate chunk if too long
         if dataBufferPointer+size(chunk,2) > size(dataBuffer,2)
             disp('Buffer overrun');
-            dataBuffer(:,dataBufferPointer:end) = chunk(chans,1:(size(dataBuffer,2)-dataBufferPointer+1));
-            dataBufferPointer = size(dataBuffer,2);
-        else
-            dataBuffer(:,dataBufferPointer:dataBufferPointer+size(chunk,2)-1) = chunk(chans,:);
-            dataBufferPointer = dataBufferPointer+size(chunk,2);
+            % truncate beginning of chunk
+            chunk(:,1:end-(size(dataBuffer,2)-dataBufferPointer)) = [];
+            lastChunkTime = [];
         end
+        
+        % filter chunk
+        if filtFlag
+            if size(chunk,2) == 1, error('Filter cannot process a single sample - increase ''pauseSecond'' parameter'); end
+            [chunkFilt,state] = filter(B,A,chunk',state);
+            chunkFilt = chunkFilt';
+        else
+            chunkFilt = chunk;
+        end
+        
+        % apply ASR on chunk
+        if asrFlag
+            [chunkFilt, stateAsr]= asr_process(chunkFilt, srateHardware, stateAsr);
+        end
+        
+        % copy data to buffers
+        dataBuffer(    :,dataBufferPointer:dataBufferPointer+size(chunk,2)-1) = chunk(chans,:);
+        dataBufferFilt(:,dataBufferPointer:dataBufferPointer+size(chunk,2)-1) = chunkFilt(chans,:);
+        dataBufferPointer = dataBufferPointer+size(chunk,2);
     end
     
-    if dataBufferPointer > chunkSize*winPerSec
+    if dataBufferPointer > chunkSize
         
-        % Decimate
-        fprintf('(%1.10f) ', sum(dataBuffer(:,1)));
-        if srateHardware == srate
-            EEG.data = dataBuffer(:,1:chunkSize*winPerSec);            
-        elseif srateHardware == 2*srate
-            EEG.data = dataBuffer(:,1:2:chunkSize*winPerSec);
-        elseif srateHardware == 4*srate
-            EEG.data = dataBuffer(:,1:4:chunkSize*winPerSec);
-        elseif srateHardware == 8*srate
-            EEG.data = dataBuffer(:,1:8:chunkSize*winPerSec);
-        else
-            error('Cannot convert sampling rate');
+        % estimate sampling rate
+        if ~isempty(lastChunkTime)
+            sRateEstimated = chunkSize/(toc - lastChunkTime);
+            if abs(srateHardware-sRateEstimated) > 0.1*srateHardware
+                fprintf('Warning: estimated heart rate %d Hz compared to %d Hz set in nfblab_options.m\n', round(sRateEstimated), round(srateHardware));
+            end
         end
+        lastChunkTime = toc;
         
-        % shift 1 window block of size chunkSize
-        dataBuffer(:, 1:end-chunkSize) = dataBuffer(:, chunkSize+1:end);
-        dataBuffer(:, end-chunkSize+1:end) = 0; % not necessary but good for debugging
+        % copy first chunk of raw data array
+        dataAccuOri( :, dataAccuPointer:dataAccuPointer+chunkSize-1) = dataBuffer(:, 1:chunkSize);
+        dataAccuFilt(:, dataAccuPointer:dataAccuPointer+chunkSize-1) = dataBufferFilt(:, 1:chunkSize);
+        dataAccuPointer   = dataAccuPointer+chunkSize;
+        
+        % shift one chunk
+        dataBuffer(    :, 1:end-chunkSize) = dataBuffer(    :, chunkSize+1:end);
+        dataBufferFilt(:, 1:end-chunkSize) = dataBufferFilt(:, chunkSize+1:end);
+        dataBuffer(    :, end-chunkSize+1:end) = 0; % not necessary but good for debugging
+        dataBufferFilt(:, end-chunkSize+1:end) = 0; % not necessary but good for debugging
         dataBufferPointer = dataBufferPointer-chunkSize;
         
-        % filter data
-        EEG.pnts = size(EEG.data,2);
-        EEG.nchan = size(EEG.data,1);
-        EEG.xmax = EEG.pnts/EEG.srate;
-        %EEG = eeg_checkset(EEG);
-        
-        %[EEG, state] = hlp_scope({'disable_expressions',true},@flt_fir, 'signal', EEG, 'fspec', [0.5 1], 'fmode', 'highpass',  'ftype','minimum-phase', 'state', state);
-        %[EEG state ] = exp_eval(flt_fir( 'signal',EEG, 'fspec', [0.9 1.1],'fmode','highpass', 'ftype','minimum-phase', 'state', state));
-        
-        % rereference
-        %EEG.data = bsxfun(@minus, EEG.data,mean(EEG.data([24 61],:))); % P9 and P10
-        if averefflag
-            EEG.data = bsxfun(@minus, EEG.data,mean(EEG.data)); % average reference
-        end
-        
-        % accumulate data if baseline mode
-        if strcmpi(runmode, 'baseline')
-            dataAccu(:, dataAccuPointer:dataAccuPointer+size(EEG.data,2)-1) = EEG.data;
-        else
-            % apply ASR and update state
-            dataAccuOri(:, dataAccuPointer:dataAccuPointer+size(EEG.data,2)-1) = EEG.data;
-            [EEG.data, stateAsr]= asr_process(EEG.data, EEG.srate, stateAsr);
-            dataAccu(:, dataAccuPointer:dataAccuPointer+size(EEG.data,2)-1) = EEG.data;
-        end
-        dataAccuPointer = dataAccuPointer + size(EEG.data,2);
-        chunkMarker(chunkCount) = dataAccuPointer;
-        
-        % Apply linear transformation (get channel Fz at that point)
-        ICAact = chanmask*EEG.data;
-        
-        % Perform spectral decomposition
-        % taper the data with hamming
-        dataSpec = fft(ICAact .* hamming(length(ICAact)), nfft);
-        dataSpec = dataSpec(freqRange);
-        X        = mean(10*log10(abs(dataSpec).^2));
-        chunkPower(chunkCount) = X;
-        
-        if ~isinf(X)
-            if strcmpi(feedbackMode, 'dynrange')
-                % assess if value position within a range
-                % and return output from 0 to 1
-                totalRange = dynRange(2)-dynRange(1);
-                feedbackValTmp = (X-dynRange(1))/totalRange;
-                if feedbackValTmp > 1, dynRange(2) = dynRange(2)+dynRangeInc*totalRange; feedbackValTmp = 1;
-                else                   dynRange(2) = dynRange(2)-dynRangeDec*totalRange;
-                end
-                if feedbackValTmp < 0, dynRange(1) = dynRange(1)-dynRangeInc*totalRange; feedbackValTmp = 0;
-                else                   dynRange(1) = dynRange(1)+dynRangeDec*totalRange;
-                end
-                if feedbackValTmp<feedbackVal
-                    if abs(feedbackValTmp-feedbackVal) > maxChange, feedbackVal = feedbackVal-maxChange;
-                    else                                            feedbackVal = feedbackValTmp;
-                    end
-                else
-                    if abs(feedbackValTmp-feedbackVal) > maxChange, feedbackVal = feedbackVal+maxChange;
-                    else                                            feedbackVal = feedbackValTmp;
-                    end
-                end
-                chunkDynRange(:,chunkCount) = dynRange;
-                fprintf('Spectral power %2.3f - output %1.2f - %1.2f [%1.2f %1.2f]\n', X, feedbackVal, feedbackValTmp, dynRange(1), dynRange(2));
-            elseif strcmpi(feedbackMode, 'threshold')
-                % simply assess if value above threshold
-                % and return binary output
-                feedbackVal = X > threshold;
-                if strcmpi(thresholdMode, 'stop')
-                    feedbackVal = ~feedbackVal;
-                end
-                threshold = threshold*thresholdMem + X*(1-thresholdMem);
-                chunkDynRange(:,chunkCount) = [threshold; threshold];
-                fprintf('Spectral power %2.3f - output %1.0f - threshold %1.2f\n', X, feedbackVal, threshold);
-            end
-        end
-        chunkFeedback(chunkCount) = feedbackVal;
-        chunkCount = chunkCount+1;
-        
-        if  strcmpi(runmode, 'trial')
-
-            % visual output through psychoToolbox
-            if psychoToolbox
-                colIndx = ceil((feedbackVal+0.001)*254);
-                 if adrBoard
-                    binval = [ '00000000' dec2bin(colIndx) ];
-                    binval = binval(end-7:end);
-                    fwrite(serialPort, ['SPA00000010' char(13)]); %dead
-                end           
-                Screen('FillPoly', window ,[0 0 colArray(colIndx)], [ xpos1 ypos1; xpos2 ypos1; xpos2 ypos2; xpos1 ypos2], 1);
-                Screen('Flip', window);
-                if adrBoard
-                    fwrite(serialPort, ['SPA00000000' char(13)]);
-                end
+        if dataAccuPointer > chunkSize*winPerSec
+            
+            % Decimate and create EEG structure of 1 second
+            if srateHardware == srate
+                EEG.data = dataAccuFilt(:,dataAccuPointer-chunkSize*winPerSec:dataAccuPointer-1);
+            elseif srateHardware == 2*srate
+                EEG.data = dataAccuFilt(:,dataAccuPointer-chunkSize*winPerSec:2:dataAccuPointer-1);
+            elseif srateHardware == 4*srate
+                EEG.data = dataAccuFilt(:,dataAccuPointer-chunkSize*winPerSec:4:dataAccuPointer-1);
+            elseif srateHardware == 8*srate
+                EEG.data = dataAccuFilt(:,dataAccuPointer-chunkSize*winPerSec:8:dataAccuPointer-1);
+            else
+                error('Processing sampling rate not a multiple of hardware acquisition sampling rate');
             end
             
-            % output through TCP/IP
-            if TCPIP
-                if strcmpi(TCPformat, 'binstatechange')
-                    if feedbackVal ~= oldFeedback
-                        fprintf('Feedback %s sent to client, ', num2str(feedbackVal));
-                        outToClient.println(num2str(feedbackVal));
-                        oldFeedback = feedbackVal;
+            % rereference
+            %EEG.data = bsxfun(@minus, EEG.data,mean(EEG.data([24 61],:))); % P9 and P10
+            if averefflag
+                EEG.data = bsxfun(@minus, EEG.data, mean(EEG.data)); % average reference
+            end
+                        
+            % make compliant EEGLAB dataset
+            EEG.pnts = size(EEG.data,2);
+            EEG.nchan = size(EEG.data,1);
+            EEG.xmax = EEG.pnts/EEG.srate;
+            
+            % Apply linear transformation (get channel Fz at that point)
+            spatiallyFilteredData = chanmask*EEG.data;
+            
+            % step to get ROI activity
+            % - compute leadfield
+            % - compute Loreta solution
+            % - extract voxels of interest
+            % - average
+            
+            % Perform spectral decomposition
+            % taper the data with hamming
+            dataSpec = fft(spatiallyFilteredData .* hamming(length(spatiallyFilteredData)), nfft);
+            dataSpec = dataSpec(freqRange);
+            X        = mean(10*log10(abs(dataSpec).^2));
+            
+            % cap spectral change
+            if ~isempty(prevX) 
+                if X > prevX+capdBchange, X = prevX+capdBchange; end
+                if X < prevX-capdBchange, X = prevX-capdBchange; end
+            end
+            prevX = X;
+            
+            % save power and pointer position
+            chunkMarker(chunkCount) = dataAccuPointer;
+            chunkPower( chunkCount) = X;
+            
+            if ~isinf(X)
+                if strcmpi(feedbackMode, 'dynrange')
+                    % assess if value position within a range
+                    % and return output from 0 to 1
+                    totalRange = dynRange(2)-dynRange(1);
+                    feedbackValTmp = (X-dynRange(1))/totalRange;
+                    if feedbackValTmp > 1, dynRange(2) = dynRange(2)+dynRangeInc*totalRange; feedbackValTmp = 1;
+                    else                   dynRange(2) = dynRange(2)-dynRangeDec*totalRange;
                     end
-                else
-                    tcpipmsg.threshold   = threshold;
-                    tcpipmsg.value       = X;
-                    tcpipmsg.statechange = feedbackVal == oldFeedback;
-                    tmpstr = jsonencode(tcpipmsg);
-                    fprintf('Feedback %s sent to client, ', tmpstr);
-                    outToClient.println(tmpstr);
-                    oldFeedback = feedbackVal;
+                    if feedbackValTmp < 0, dynRange(1) = dynRange(1)-dynRangeInc*totalRange; feedbackValTmp = 0;
+                    else                   dynRange(1) = dynRange(1)+dynRangeDec*totalRange;
+                    end
+                    if feedbackValTmp<feedbackVal
+                        if abs(feedbackValTmp-feedbackVal) > maxChange, feedbackVal = feedbackVal-maxChange;
+                        else                                            feedbackVal = feedbackValTmp;
+                        end
+                    else
+                        if abs(feedbackValTmp-feedbackVal) > maxChange, feedbackVal = feedbackVal+maxChange;
+                        else                                            feedbackVal = feedbackValTmp;
+                        end
+                    end
+                    chunkDynRange(:,chunkCount) = dynRange;
+                    fprintf('Spectral power %2.3f - output %1.2f - %1.2f [%1.2f %1.2f]\n', X, feedbackVal, feedbackValTmp, dynRange(1), dynRange(2));
+                elseif strcmpi(feedbackMode, 'threshold')
+                    % simply assess if value above threshold
+                    % and return binary output
+                    feedbackVal = X > threshold;
+                    if strcmpi(thresholdMode, 'stop')
+                        feedbackVal = ~feedbackVal;
+                    end
+                    threshold = threshold*thresholdMem + X*(1-thresholdMem);
+                    chunkThreshold(chunkCount) = threshold;
+                    fprintf('Spectral power %2.3f - output %1.0f - threshold %1.2f\n', X, feedbackVal, threshold);
                 end
             end
-        else
-            fprintf('.');
+            chunkFeedback(chunkCount) = feedbackVal;
+            chunkCount = chunkCount+1;
+            
+            if  strcmpi(runmode, 'trial')
+                
+                % visual output through psychoToolbox
+                if psychoToolbox
+                    colIndx = ceil((feedbackVal+0.001)*254);
+                    if adrBoard
+                        binval = [ '00000000' dec2bin(colIndx) ];
+                        binval = binval(end-7:end);
+                        fwrite(serialPort, ['SPA00000010' char(13)]); %dead
+                    end
+                    Screen('FillPoly', window ,[0 0 colArray(colIndx)], [ xpos1 ypos1; xpos2 ypos1; xpos2 ypos2; xpos1 ypos2], 1);
+                    Screen('Flip', window);
+                    if adrBoard
+                        fwrite(serialPort, ['SPA00000000' char(13)]);
+                    end
+                end
+                
+                % output through TCP/IP
+                if TCPIP
+                    if strcmpi(TCPformat, 'binstatechange')
+                        if feedbackVal ~= oldFeedback
+                            fprintf('Feedback %s sent to client, ', num2str(feedbackVal));
+                            outToClient.println(num2str(feedbackVal));
+                            oldFeedback = feedbackVal;
+                        end
+                    else
+                        tcpipmsg.threshold   = threshold;
+                        tcpipmsg.value       = X;
+                        tcpipmsg.statechange = feedbackVal == oldFeedback;
+                        tmpstr = jsonencode(tcpipmsg);
+                        fprintf('Feedback %s sent to client, ', tmpstr);
+                        outToClient.println(tmpstr);
+                        oldFeedback = feedbackVal;
+                    end
+                end
+            else
+                fprintf('.');
+            end
         end
-        pause(0.1);
-    else 
-        pause(0.1);
     end
 end
 fprintf('\n');
@@ -379,17 +432,19 @@ chunkMarker(chunkCount:end) = [];
 chunkPower(chunkCount:end) = [];
 chunkFeedback(chunkCount:end) = [];
 chunkDynRange(:,chunkCount:end) = [];
+chunkThreshold(chunkCount:end) = [];
 
 % select calibration data
+dataAccuOri  = dataAccuOri( :, 1:dataAccuPointer-1); % last second of data might be lost because still in buffer
+dataAccuFilt = dataAccuFilt(:, 1:dataAccuPointer-1); % last second of data might be lost because still in buffer
 if strcmpi(runmode, 'baseline')
     disp('Calibrating ASR...');
-    dataAccu = dataAccu(:, 1:dataAccuPointer-1);
-    state = asr_calibrate(dataAccu, EEG.srate);
-    save('-mat', fileNameAsr, 'state', 'dynRange', 'dataAccu', 'chunkMarker', 'chunkPower', 'chunkFeedback', 'chunkDynRange', 'srate', 'freqrange' );
+    stateAsr = asr_calibrate(dataAccuFilt, srateHardware);
+    save('-mat', fileNameAsr, 'stateAsr', 'dynRange', 'dataAccuOri', 'dataAccuFilt', 'chunkMarker', 'chunkPower', 'chunkFeedback', 'chunkDynRange', 'chunkThreshold', 'srate', 'freqrange' );
     fprintf('Saving file %s\n', fileNameAsr);
 else 
     % close text file
-    save('-mat', fileNameOut, 'stateAsr', 'dataAccu', 'dataAccuOri', 'chunkMarker', 'chunkPower', 'chunkFeedback', 'chunkDynRange', 'srate', 'freqrange' );
+    save('-mat', fileNameOut, 'stateAsr', 'dataAccuOri', 'dataAccuFilt', 'chunkMarker', 'chunkPower', 'chunkFeedback', 'chunkDynRange', 'chunkThreshold', 'srate', 'freqrange' );
     if psychoToolbox
         Screen('Closeall');
     end
