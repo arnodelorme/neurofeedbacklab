@@ -315,9 +315,17 @@ while toc < sessionDuration
             EEG.nchan = size(EEG.data,1);
             EEG.xmax = EEG.pnts/EEG.srate;
             
-            % Apply linear transformation (get channel Fz at that point)
-            spatiallyFilteredData = chanmask*EEG.data;
-            
+            if eLoretaFlag
+                % Apply linear transformation (get channel Fz at that point)
+                spatiallyFilteredData = chanmask*EEG.data;
+            else
+                % project to source space
+                source_voxel_data = reshape(EEG.data(:, :)'*P_eloreta(:, :), EEG.pnts*EEG.trials, nvox, 3);
+                
+                % select voxels of interest and average
+                source_roi_data = mean(abs(source_voxel_data(:,ind_roi,:),3),2)';
+            end
+
             % step to get ROI activity
             % - compute leadfield
             % - compute Loreta solution

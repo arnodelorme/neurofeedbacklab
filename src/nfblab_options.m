@@ -95,6 +95,7 @@ TCPformat      = 'binstatechange'; % send state change only (when above of below
 
 %custom_config = 'none';
 %custom_config = '8-channel-cgs';
+%custom_config = '8-channel-cgs';
 %custom_config = '24-channel-ws';
 %custom_config = '24-channel-cg';
 %custom_config = '32-channel-cg';
@@ -117,6 +118,13 @@ switch custom_config
         chanmask(7) = 1; % A1
         TCPIP    = true;
         lslname = 'CGX Dev Kit DK-0090'; % this is the name of the stream that shows in Lab Recorder
+        disp('CAREFUL: using alternate configuration in nfblab_option');
+    case '8-channel-cyton'
+        chans    = [1:8]; % indices of data channels
+        chanmask = zeros(1,8); 
+        chanmask(7) = 1; % A1
+        TCPIP    = true;
+        lslname = 'openbci_eeg'; % this is the name of the stream that shows in Lab Recorder
         disp('CAREFUL: using alternate configuration in nfblab_option');
     case 'offline-file'
         p = fileparts(which('nfblab_options.m'));
