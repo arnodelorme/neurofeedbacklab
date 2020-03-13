@@ -36,6 +36,10 @@
 
 function nfblab_process(varargin)
 nfblab_options;
+try
+    nfblab_algo; % specific algorithms
+catch
+end
 import java.io.*; % for TCP/IP
 import java.net.*; % for TCP/IP
 
