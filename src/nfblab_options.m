@@ -6,7 +6,8 @@
 
 % LSL parameters
 % --------------
-streamFile = ''; % if not empty stream a file instead of using LSL
+p = fileparts(which('nfblab_options.m'));
+streamFile = fullfile(p, 'eeglab_data.set'); % if not empty stream a file instead of using LSL
 lsltype = ''; % use empty if you cannot connect to your system
 lslname = 'CGX Dev Kit DK-0090'; % this is the name of the stream that shows in Lab Recorder
 % lslname = 'WS-default'; % this is the name of the stream that shows in Lab Recorder
@@ -31,6 +32,7 @@ sessionDuration = 60*0.5; % regular (trial) sessions - here 5 minutes
 chans      = [1:8]; % indices of data channels
 averefflag = false; % compute average reference before chanmask below
 chanmask = zeros(1,8); chanmask(1) = 1; % spatial filter for feedback
+eLoretaFlag = false;
 
 % data processing parameters (use montage section later in this script to tune parameters)
 % --------------------------
@@ -39,6 +41,7 @@ srate         = 500; % sampling rate for processing data (must divide srateHardw
 windowSize    = 500; % length of window size for FFT (if equal to srate then 1 second)
 nfft          = 500; % length of FFT - allows FFT padding if necessary
 windowInc     = 125;  % window increment - in this case update every 1/4 second
+warnsrate     = false; % issue warning when actual sampling rate differs from the one above
 
 % data filtering, see more filter settings at the end of this file
 % ----------------------------------------------------------------
@@ -47,10 +50,10 @@ asrFlag  = true;  % use Artifact Subspace Reconstruction using baseline calibrat
 
 % feedback parameters
 % -------------------
-freqrange      = [3.5 6.5]; % Frequency range of interest. This program does
-                            % not allow inhibition at other frequencies
-                            % although it could be modified to do so
-capdBchange    = 10;        % Maximum dB change from one block to the next           
+freqrange      = { [3.5 6.5] }; % Frequency ranges of interest
+freqdb         = true;  % convert power to dB                  
+freqprocess.thetaChan1 = @(x)x; % identity simply use theta power of the unique selected channel                          
+capdBchange    = [10];      % Maximum dB change from one block to the next           
                             % Set to 1000 to disable feature
 feedbackMode = 'threshold'; % see below
 
@@ -81,69 +84,11 @@ feedbackMode = 'threshold'; % see below
 psychoToolbox  = false;  % Toggle to false for testing without psych toolbox
 adrBoard       = false;  % Toggle to true if using ADR101 board to send events to the
                          % EEG amplifier
-TCPIP          = false;  % send feedback to client through TCP/IP socket
-TCPport        = 9789;   
-TCPformat      = 'binstatechange'; % send state change only (when above of below threshold)
-                                   % 'json' sends a json strings with more information
+TCPIP          = true;  % send feedback to client through TCP/IP socket
+TCPport        = NaN;   
+TCPformat      = 'json'; % 'binstatechange' send state change only (when above of below threshold)
+                         % 'json' sends a json strings with more information
                             
-% ***************************
-%
-% PREDEFINED MONTAGE CHANGING
-% DEFAULT SETTIGNS ABOVE
-%
-% ***************************
-
-%custom_config = 'none';
-%custom_config = '8-channel-cgs';
-%custom_config = '8-channel-cgs';
-%custom_config = '24-channel-ws';
-%custom_config = '24-channel-cg';
-%custom_config = '32-channel-cg';
-%custom_config = '64-channel';
-custom_config = 'offline-file';
-
-switch custom_config
-    case 'none'
-    case '24-channel-ws'
-        chans    = [1:24]; % indices of data channels
-        chanmask = zeros(1,24); 
-        chanmask(12) = 1; % C4 spatial filter for feedback
-        chanmask(19) = -1; % Pz
-        TCPIP    = true;
-        lslname = 'WS-default'; % this is the name of the stream that shows in Lab Recorder
-        disp('CAREFUL: using alternate configuration in nfblab_option');
-    case '8-channel-cgs'
-        chans    = [1:8]; % indices of data channels
-        chanmask = zeros(1,8); 
-        chanmask(7) = 1; % A1
-        TCPIP    = true;
-        lslname = 'CGX Dev Kit DK-0090'; % this is the name of the stream that shows in Lab Recorder
-        disp('CAREFUL: using alternate configuration in nfblab_option');
-    case '8-channel-cyton'
-        chans    = [1:8]; % indices of data channels
-        chanmask = zeros(1,8); 
-        chanmask(7) = 1; % A1
-        TCPIP    = true;
-        lslname = 'openbci_eeg'; % this is the name of the stream that shows in Lab Recorder
-        disp('CAREFUL: using alternate configuration in nfblab_option');
-    case 'offline-file'
-        p = fileparts(which('nfblab_options.m'));
-        streamFile = fullfile(p, 'eeglab_data.set'); % if not empty stream a file instead of using LSL
-        chans    = [1:32]; % indices of data channels
-        chanmask = zeros(1,32); chanmask(1) = 1; % spatial filter for feedback
-        srate    = 128;
-        srateHardware = 128;
-        windowSize    = 128; % length of window size for FFT (if equal to srate then 1 second)
-        nfft          = 128; % length of FFT - allows FFT padding if necessary
-        windowInc     = 32;  % window increment - in this case update every 1/4 second
-        TCPIP         = false;
-        pauseSecond   = 0.24;
-        TCPformat = 'json';
-        disp('CAREFUL: using alternate configuration in nfblab_option');
-    otherwise 
-        error('Unknown configuration');
-end
-
 % ***************************
 %
 % MORE ADVANCED SETTNGS BELOW

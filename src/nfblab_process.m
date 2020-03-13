@@ -37,7 +37,7 @@
 function nfblab_process(varargin)
 nfblab_options;
 try
-    nfblab_algo; % specific algorithms
+    nfblab_options_additional; % additional options that overwritte the options above
 catch
 end
 import java.io.*; % for TCP/IP
@@ -143,10 +143,12 @@ end
 % create TCP/IP socket
 oldFeedback = 0;
 if TCPIP
-    kkSocket  = ServerSocket( TCPport );
-    fprintf('Trying to accept connection from client (if program get stuck here, check client)...\n');
-    connectionSocket = kkSocket.accept();
-    outToClient = PrintWriter(connectionSocket.getOutputStream(), true);
+    if ~isnan(TCPport)
+        kkSocket  = ServerSocket( TCPport );
+        fprintf('Trying to accept connection from client (if program get stuck here, check client)...\n');
+        connectionSocket = kkSocket.accept();
+        outToClient = PrintWriter(connectionSocket.getOutputStream(), true);
+    end
 end
 
 % select calibration data
@@ -191,7 +193,6 @@ end
 % frequencies for spectral decomposition
 freqs  = linspace(0, srate/2, floor(nfft/2));
 freqs     = freqs(2:end); % remove DC (match the output of PSD)
-freqRange = intersect( find(freqs >= freqrange(1)), find(freqs <= freqrange(2)) );
 
 %% create a new inlet
 tic;
@@ -222,6 +223,7 @@ chunkCount    = 1;
 
 warning('off', 'MATLAB:subscripting:noSubscriptsSpecified'); % for ASR
 lastChunkTime = [];
+freqprocessFields = fieldnames(freqprocess);
 while toc < sessionDuration
     % pause between each loop
     pause(pauseSecond);
@@ -273,7 +275,7 @@ while toc < sessionDuration
     if dataBufferPointer > chunkSize
         
         % estimate sampling rate
-        if ~isempty(lastChunkTime)
+        if ~isempty(lastChunkTime) && warnsrate
             sRateEstimated = chunkSize/(toc - lastChunkTime);
             if abs(srateHardware-sRateEstimated) > 0.1*srateHardware
                 fprintf('Warning: estimated heart rate %d Hz compared to %d Hz set in nfblab_options.m\n', round(sRateEstimated), round(srateHardware));
@@ -320,14 +322,14 @@ while toc < sessionDuration
             EEG.xmax = EEG.pnts/EEG.srate;
             
             if eLoretaFlag
-                % Apply linear transformation (get channel Fz at that point)
-                spatiallyFilteredData = chanmask*EEG.data;
-            else
                 % project to source space
                 source_voxel_data = reshape(EEG.data(:, :)'*P_eloreta(:, :), EEG.pnts*EEG.trials, nvox, 3);
                 
                 % select voxels of interest and average
                 source_roi_data = mean(abs(source_voxel_data(:,ind_roi,:),3),2)';
+            else
+                % Apply linear transformation (get channel Fz at that point)
+                spatiallyFilteredData = chanmask*EEG.data;
             end
 
             % step to get ROI activity
@@ -338,11 +340,25 @@ while toc < sessionDuration
             
             % Perform spectral decomposition
             % taper the data with hamming
-            dataSpec = fft(spatiallyFilteredData .* hamming(length(spatiallyFilteredData)), nfft);
-            dataSpec = dataSpec(freqRange);
-            X        = mean(10*log10(abs(dataSpec).^2));
+            dataSpec = fft(bsxfun(@times, spatiallyFilteredData', hamming(size(spatiallyFilteredData,2))), nfft);
             
-            % cap spectral change
+            % select frequency bands
+            dataSpecSelect = zeros(size(spatiallyFilteredData,1), length(freqrange));
+            for iSpec = 1:length(freqrange)
+                freqRangeTmp = intersect( find(freqs >= freqrange{iSpec}(1)), find(freqs <= freqrange{iSpec}(2)) );
+                dataSpecSelect(:,iSpec) = mean(abs(dataSpec(freqRangeTmp,:)).^2,1); % mean power in frequency range 
+                if freqdb
+                    dataSpecSelect(:,iSpec) = 10*log10(abs(dataSpecSelect(:,iSpec)).^2);
+                end
+            end
+            
+            % compute metric of interest
+            for iProcess = 1:length(freqprocessFields)
+                results.(freqprocessFields{iProcess}) = feval(freqprocess.(freqprocessFields{iProcess}), dataSpecSelect);
+            end
+            X = results.(freqprocessFields{iProcess});
+            
+            % cap spectral change for feedback measure
             if ~isempty(prevX) 
                 if X > prevX+capdBchange, X = prevX+capdBchange; end
                 if X < prevX-capdBchange, X = prevX-capdBchange; end
@@ -413,16 +429,17 @@ while toc < sessionDuration
                     if strcmpi(TCPformat, 'binstatechange')
                         if feedbackVal ~= oldFeedback
                             fprintf('Feedback %s sent to client, ', num2str(feedbackVal));
-                            outToClient.println(num2str(feedbackVal));
+                            if ~isnan(TCPport), outToClient.println(num2str(feedbackVal)); end
                             oldFeedback = feedbackVal;
                         end
                     else
+                        tcpipmsg             = results;
                         tcpipmsg.threshold   = threshold;
                         tcpipmsg.value       = X;
                         tcpipmsg.statechange = feedbackVal == oldFeedback;
                         tmpstr = jsonencode(tcpipmsg);
                         fprintf('Feedback %s sent to client, ', tmpstr);
-                        outToClient.println(tmpstr);
+                        if ~isnan(TCPport), outToClient.println(tmpstr); end
                         oldFeedback = feedbackVal;
                     end
                 end
