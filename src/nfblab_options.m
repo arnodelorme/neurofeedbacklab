@@ -85,7 +85,7 @@ psychoToolbox  = false;  % Toggle to false for testing without psych toolbox
 adrBoard       = false;  % Toggle to true if using ADR101 board to send events to the
                          % EEG amplifier
 TCPIP          = true;  % send feedback to client through TCP/IP socket
-TCPport        = NaN;   
+TCPport        = 9789;
 TCPformat      = 'json'; % 'binstatechange' send state change only (when above of below threshold)
                          % 'json' sends a json strings with more information
                             
@@ -136,19 +136,24 @@ end
 % path to BCILAB toolbox 
 % if it cannot be found, try to infer it
 BCILABpath     = 'Z:\data\matlab\BCILAB'; 
-if ~exist(BCILABpath, 'dir')
-    p = fileparts(which('nbflab_options'));
-    BCILABpath = fullfile(p, '..', 'BCILAB');
+if ~isdeployed
     if ~exist(BCILABpath, 'dir')
-        BCILABpath = fullfile(p, '..', '..', 'BCILAB');
+        p = fileparts(which('nbflab_options'));
+        BCILABpath = fullfile(p, '..', 'BCILAB');
         if ~exist(BCILABpath, 'dir')
-           error('Cannot find BCILAB - set path manually in file nfblab_options.m');
+            BCILABpath = fullfile(p, '..', '..', 'BCILAB');
+            if ~exist(BCILABpath, 'dir')
+               error('Cannot find BCILAB - set path manually in file nfblab_options.m');
+            end
         end
     end
-end
 
-addpath(fullfile(BCILABpath, 'code', 'misc')); % for asr_calibrate
-addpath(fullfile(BCILABpath, 'dependencies', 'liblsl-Matlab'));
-addpath(fullfile(BCILABpath, 'dependencies', 'liblsl-Matlab', 'bin'));
-addpath(fullfile(BCILABpath, 'dependencies', 'liblsl-Matlab', 'mex', 'build-Christian-PC'));
-addpath(fullfile(BCILABpath, 'dependencies', 'asr-matlab-2012-09-12')); % not required if copied the files above
+    addpath(fullfile(BCILABpath, 'code', 'misc')); % for asr_calibrate
+    addpath(fullfile(BCILABpath, 'dependencies', 'liblsl-Matlab'));
+    addpath(fullfile(BCILABpath, 'dependencies', 'liblsl-Matlab', 'bin'));
+    addpath(fullfile(BCILABpath, 'dependencies', 'liblsl-Matlab', 'mex', 'build-Christian-PC')); % PC
+    addpath(fullfile(BCILABpath, 'dependencies', 'liblsl-Matlab', 'mex', 'build-seeding.ucsd.edu')); % Mac
+    addpath(fullfile(BCILABpath, 'dependencies', 'liblsl-Matlab', 'mex', 'build-Jordan')); % Ubuntu
+    addpath(fullfile(BCILABpath, 'dependencies', 'liblsl-Matlab', 'mex', 'build-juggling-0-1.local')); % Ubuntu
+    addpath(fullfile(BCILABpath, 'dependencies', 'asr-matlab-2012-09-12')); % not required if copied the files above
+end
