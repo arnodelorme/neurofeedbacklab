@@ -3,19 +3,20 @@
 % MAIN SETTNGS BELOW FOR NFBLAB_PROCESS
 %
 % *************************************
+runmode = 'slave';
 
 % LSL parameters
 % --------------
 p = fileparts(which('nfblab_options.m'));
 streamFile = fullfile(p, 'eeglab_data.set'); % if not empty stream a file instead of using LSL
-lsltype = ''; % use empty if you cannot connect to your system
-lslname = 'CGX Dev Kit DK-0090'; % this is the name of the stream that shows in Lab Recorder
+lsltype = 'EEG'; % use empty if you cannot connect to your system
+lslname = ''; % this is the name of the stream that shows in Lab Recorder
 % lslname = 'WS-default'; % this is the name of the stream that shows in Lab Recorder
               % if empty, it will only use the type above
               % USE lsl_resolve_byprop(lib, 'type', lsltype, 'name', lslname) 
               % to connect to the stream. If you cannot connect
               % nfblab won't be able to connect either.
-pauseSecond    = 0.05;  % pause between each loop (to give the time for LSL to acquire data)
+pauseSecond    = 0.2;  % pause between each loop (to give the time for LSL to acquire data)
                         % could be 0 but then filtering is applied on each
                         % sample potentially slowing down computation
 
@@ -29,18 +30,18 @@ sessionDuration = 60*0.5; % regular (trial) sessions - here 5 minutes
 
 % data acquisition parameters
 % ---------------------------
-chans      = [1:8]; % indices of data channels
+chans      = [1:4]; % indices of data channels
 averefflag = false; % compute average reference before chanmask below
-chanmask = zeros(1,8); chanmask(1) = 1; % spatial filter for feedback
+chanmask = zeros(1,4); chanmask(1) = 1; % spatial filter for feedback (channel 1 here)
 eLoretaFlag = false;
 
 % data processing parameters (use montage section later in this script to tune parameters)
 % --------------------------
-srateHardware = 500; % sampling rate of the hardware
-srate         = 500; % sampling rate for processing data (must divide srateHardware)
-windowSize    = 500; % length of window size for FFT (if equal to srate then 1 second)
-nfft          = 500; % length of FFT - allows FFT padding if necessary
-windowInc     = 125;  % window increment - in this case update every 1/4 second
+srateHardware = 250; % sampling rate of the hardware
+srate         = 250; % sampling rate for processing data (must divide srateHardware)
+windowSize    = 250; % length of window size for FFT (if equal to srate then 1 second)
+nfft          = 250; % length of FFT - allows FFT padding if necessary
+windowInc     = 75;  % window increment - in this case update every 0.3 second
 warnsrate     = false; % issue warning when actual sampling rate differs from the one above
 
 % data filtering, see more filter settings at the end of this file
@@ -55,7 +56,7 @@ freqdb         = true;  % convert power to dB
 freqprocess.thetaChan1 = @(x)x; % identity simply use theta power of the unique selected channel                          
 capdBchange    = [10];      % Maximum dB change from one block to the next           
                             % Set to 1000 to disable feature
-feedbackMode = 'threshold'; % see below
+feedbackMode = 'dynrange'; % see below
 
 % feedbackMode = 'threshold';
     % parameters for threshold change. The threshold mode simply involve
@@ -118,8 +119,8 @@ if 0
     A  = 1;
 end
 
-% elipical filter (short delay but phase distortion - does not matter here
-% since we are only computing power)
+% elipical filter (short delay but phase distortion - phase distortion does not matter much here
+% since we are only computing power - except for potential delays)
 if filtFlag
     nyq      = srateHardware/2; % Nyquist frequency
     hicutoff = 1;      % low cutoff
@@ -155,5 +156,6 @@ if ~isdeployed
     addpath(fullfile(BCILABpath, 'dependencies', 'liblsl-Matlab', 'mex', 'build-seeding.ucsd.edu')); % Mac
     addpath(fullfile(BCILABpath, 'dependencies', 'liblsl-Matlab', 'mex', 'build-Jordan')); % Ubuntu
     addpath(fullfile(BCILABpath, 'dependencies', 'liblsl-Matlab', 'mex', 'build-juggling-0-1.local')); % Ubuntu
+    addpath(fullfile(BCILABpath, 'dependencies', 'liblsl-Matlab', 'mex', 'build-Nedas-MacBook-Pro.local'));
     addpath(fullfile(BCILABpath, 'dependencies', 'asr-matlab-2012-09-12')); % not required if copied the files above
 end

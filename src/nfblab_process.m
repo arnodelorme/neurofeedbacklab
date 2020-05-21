@@ -37,7 +37,7 @@
 function nfblab_process(varargin)
 nfblab_options;
 try
-    nfblab_options_additional; % additional options that overwritte the options above
+%    nfblab_options_additional; % additional options that overwritte the options above
 catch
 end
 import java.io.*; % for TCP/IP
@@ -231,7 +231,7 @@ while 1
         end
         allowedFields = { 'runmode' 'fileNameAsr' 'fileNameOut' 'threshold' 'thresholdMem' ...
             'thresholdMode' 'maxChange' 'dynRange' 'dynRangeDec' 'dynRangeInc' 'filtFlag' ...
-            'asrFlag' 'freqrange' 'freqdb' 'freqprocess' 'addfreqprocess' 'capdBchange' 'feedbackMode' ...
+            'asrFlag' 'freqrange' 'freqdb' 'freqprocess' 'addfreqprocess' 'ntlfreqprocess' 'capdBchange' 'feedbackMode' ...
             'chans' 'averefflag' 'chanmask' 'eLoretaFlag' 'lsltype' 'lslname' };
         for iField = 1:length(fieldJson)
             if ~ismember(fieldJson{iField}, allowedFields)
@@ -252,7 +252,12 @@ while 1
                         freqprocess.(iFieldProc{1}) = addfreqprocess.(iFieldProc{1});
                     end
                 end
-                                
+                
+                % handle freqprocess parameter
+                if ~isempty(findstr(fieldJson{iField}, 'ntlfreqprocess'))
+                    nfblab_jsonntl; % process NTL command 
+                end
+                
                 % handle freqprocess parameter
                 if ~isempty(findstr(fieldJson{iField}, 'freqprocess')) % freqprocess or addfreqprocess
                     for iFieldProc = fieldnames(freqprocess)'
@@ -567,7 +572,8 @@ while 1
                 tcpipmsg.threshold   = threshold;
                 tcpipmsg.value       = X;
                 tcpipmsg.statechange = feedbackVal == oldFeedback;
-                currentMsg = jsonencode(tcpipmsg);
+                tcpipmsg.feedback    = feedbackVal;
+		currentMsg = jsonencode(tcpipmsg);
                 oldFeedback = feedbackVal;
                 
                 % visual output through psychoToolbox
