@@ -3,12 +3,13 @@
 % MAIN SETTNGS BELOW FOR NFBLAB_PROCESS
 %
 % *************************************
-runmode = 'slave';
+%runmode = 'slave';
 
 % LSL parameters
 % --------------
 p = fileparts(which('nfblab_options.m'));
 streamFile = fullfile(p, 'eeglab_data.set'); % if not empty stream a file instead of using LSL
+streamFile = ''; % if not empty stream a file instead of using LSL
 lsltype = 'EEG'; % use empty if you cannot connect to your system
 lslname = ''; % this is the name of the stream that shows in Lab Recorder
 % lslname = 'WS-default'; % this is the name of the stream that shows in Lab Recorder
@@ -83,12 +84,11 @@ feedbackMode = 'dynrange'; % see below
 % visual feedback or output
 % -------------------------
 psychoToolbox  = false;  % Toggle to false for testing without psych toolbox
+simplePlot     = true;   % Simple plot of spectral power
 adrBoard       = false;  % Toggle to true if using ADR101 board to send events to the
                          % EEG amplifier
-TCPIP          = true;  % send feedback to client through TCP/IP socket
+TCPIP          = false;   % send feedback to client through TCP/IP socket
 TCPport        = 9789;
-TCPformat      = 'json'; % 'binstatechange' send state change only (when above of below threshold)
-                         % 'json' sends a json strings with more information
                             
 % ***************************
 %

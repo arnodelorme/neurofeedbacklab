@@ -61,6 +61,7 @@ else
     disp('Note: default ASR instroduces a delay - in our experience 1/4 second)');
 end
 if ~exist('runmode')
+    TCPIP = false;
     s = input('Do you want to run a baseline now (y/n)?', 's');
     if strcmpi(s, 'y'), runmode = 'baseline';
     elseif strcmpi(s, 'n'), runmode = 'trial';
@@ -81,7 +82,7 @@ elseif strcmpi(runmode, 'baseline')
     end
     msg(end+1).command = 'start';
     msg(end).options.runmode     = 'baseline';
-    msg(end+baselineSessionDuration).command = 'stop';
+    msg(end+baselineSessionDuration*4).command = 'stop';
     msg(end+1).command = 'quit';
     iMsg = 1;
 elseif strcmpi(runmode, 'trial')
@@ -106,7 +107,7 @@ elseif strcmpi(runmode, 'trial')
     end
     msg(end+1).command = 'start';
     msg(end).options.runmode = 'trial';
-    msg(end+sessionDuration).command = 'stop';
+    msg(end+sessionDuration*4).command = 'stop';
     msg(end+1).command = 'quit';
     iMsg = 1;
 end
@@ -144,8 +145,8 @@ warning('off', 'MATLAB:subscripting:noSubscriptsSpecified'); % for ASR
 % ----------------------------
 if psychoToolbox
     Screen('Preference', 'SkipSyncTests', 1);
-    screenid = 2; % 1 = external screen
-    Screen('resolution', screenid, 800, 600, 75);
+    screenid = 0; % 1 = external screen
+    %Screen('resolution', screenid, 800, 600, 60);
     
     %imaging = kPsychNeedFastBackingStore;
     %Screen('Preference', 'VBLTimestampingMode', 1);
@@ -231,7 +232,7 @@ while 1
         end
         allowedFields = { 'runmode' 'fileNameAsr' 'fileNameOut' 'threshold' 'thresholdMem' ...
             'thresholdMode' 'maxChange' 'dynRange' 'dynRangeDec' 'dynRangeInc' 'filtFlag' ...
-            'asrFlag' 'freqrange' 'freqdb' 'freqprocess' 'addfreqprocess' 'ntlfreqprocess' 'capdBchange' 'feedbackMode' ...
+            'asrFlag' 'freqrange' 'freqdb' 'freqprocess' 'addfreqprocess' 'capdBchange' 'feedbackMode' ...
             'chans' 'averefflag' 'chanmask' 'eLoretaFlag' 'lsltype' 'lslname' };
         for iField = 1:length(fieldJson)
             if ~ismember(fieldJson{iField}, allowedFields)
@@ -251,11 +252,6 @@ while 1
                     for iFieldProc = fieldnames(addfreqprocess)'
                         freqprocess.(iFieldProc{1}) = addfreqprocess.(iFieldProc{1});
                     end
-                end
-                
-                % handle freqprocess parameter
-                if ~isempty(findstr(fieldJson{iField}, 'ntlfreqprocess'))
-                    nfblab_jsonntl; % process NTL command 
                 end
                 
                 % handle freqprocess parameter
@@ -573,14 +569,26 @@ while 1
                 tcpipmsg.value       = X;
                 tcpipmsg.statechange = feedbackVal == oldFeedback;
                 tcpipmsg.feedback    = feedbackVal;
-		currentMsg = jsonencode(tcpipmsg);
+                currentMsg = jsonencode(tcpipmsg);
                 oldFeedback = feedbackVal;
                 
                 % visual output through psychoToolbox
-                if strcmpi(runmode, 'trial')&& psychoToolbox
-                    colIndx = ceil((feedbackVal+0.001)*254);
-                    Screen('FillPoly', window ,[0 0 colArray(colIndx)], [ xpos1 ypos1; xpos2 ypos1; xpos2 ypos2; xpos1 ypos2], 1);
-                    Screen('Flip', window);
+                if strcmpi(runmode, 'trial') 
+                    if simplePlot
+                        if chunkCount < 22
+                            tmpPower = chunkPower(1:20);
+                            tmpPower(tmpPower == 0) = NaN;
+                            plot(tmpPower);
+                        else
+                            plot(chunkPower(chunkCount-20:chunkCount-1));
+                        end
+                        title('Spectral power');
+                    end
+                	if psychoToolbox
+                        colIndx = ceil((feedbackVal+0.001)*254);
+                        Screen('FillPoly', window ,[0 0 colArray(colIndx)], [ xpos1 ypos1; xpos2 ypos1; xpos2 ypos2; xpos1 ypos2], 1);
+                        Screen('Flip', window);
+                    end
                 end
             end
         end
