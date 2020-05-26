@@ -4,6 +4,11 @@ A Neurofeedback software approach based on Matlab. There is no visual programmin
 
 [![Watch the demo](demo.png)](https://www.youtube.com/watch?v=C0-Mv3TY8Ys)
 
+# Tutorial videos
+- Demo above https://www.youtube.com/watch?v=C0-Mv3TY8Ys
+- Neurofeedback parameters 
+- Participants during actual experiment https://youtu.be/7lrMgpV1FSI
+
 # Dependencies
 
 - Matlab (including student versions)
