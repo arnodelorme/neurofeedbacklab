@@ -6,7 +6,7 @@ A Neurofeedback software approach based on Matlab. There is no visual programmin
 
 # Tutorial videos
 - Demo above https://www.youtube.com/watch?v=C0-Mv3TY8Ys
-- Neurofeedback parameters 
+- Neurofeedback parameters https://youtu.be/hGiupsdwMi4
 - Participants during actual experiment https://youtu.be/7lrMgpV1FSI
 
 # Dependencies
