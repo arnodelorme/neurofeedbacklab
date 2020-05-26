@@ -2,6 +2,8 @@
 
 A Neurofeedback software approach based on Matlab. There is no visual programming language, so it is only sutable for those who do not fear source code and the command line.
 
+[![Watch the demo](demo.png)](https://www.youtube.com/watch?v=C0-Mv3TY8Ys)
+
 # Dependencies
 
 - Matlab (including student versions)
