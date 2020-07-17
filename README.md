@@ -1,6 +1,6 @@
 # Neurofeedbacklab
 
-A Neurofeedback software approach based on Matlab. There is no visual programming language, so it is only sutable for those who do not fear source code and the command line.
+A Neurofeedback software approach based on Matlab. There is no graphical interface, so it is mostly for neurofeedback research purposes, or for neurofeedback expert who do not fear to change settings in text files.
 
 [![Watch the demo](demo.png)](https://www.youtube.com/watch?v=Mx3kf1MpAns)
 
