@@ -1,0 +1,36 @@
+language: c
+env:
+  LSLDIST_URL="https://dl.bintray.com/labstreaminglayer/LSL/"
+  UBUNTU_DIST="trusty"
+  LSL_VERSION="1.1.2"
+  - CMakeArgs=""
+script:
+- cp ${LSL_INSTALL_ROOT}/lib/* bin/
+- octave-cli --eval build_mex
+- rm bin/*.o
+- tar --transform "s/^\.\?/liblsl-matlab/" -cjf liblsl-matlab-${LSL_VERSION}.tar.bz2 . || true
+matrix:
+  include:
+  - os: linux
+    addons:
+      apt:
+        packages:
+        - liboctave-dev
+    before_script:
+    - travis_retry wget --quiet ${LSLDIST_URL}/lsl-liblsl{,-dev}_${LSL_VERSION}-${UBUNTU_DIST}_amd64.deb
+    - for deb in *.deb; do dpkg -x ${deb} LSL; done
+    - export LSL_INSTALL_ROOT=LSL/usr
+  - os: osx
+    before_install:
+    - brew install octave
+    before_script:
+    - travis_retry wget --quiet ${LSLDIST_URL}/LSL-${LSL_VERSION}-Darwin-liblsl{,-dev}.tar.bz2
+    - mkdir LSL; for file in *.tar.bz2; do tar -xf ${file} -C LSL; done
+    - export LSL_INSTALL_ROOT=LSL
+deploy:
+  skip_cleanup: true
+  provider: bintray
+  user: tstenner
+  key:
+    secure: "PoHMsNdp5UgFtAPljabOVC+6r5wjwHZwGgVDLEgKs0b+EwgkShj42Li03vQCz2u0cRkgHutv5cGCe8L5+ez4zyqnF98gXrgflbhcfdjhHEB6hp65kV2+9myNOPcrlsm+gR0Ex1kN1owfDRfBIasa6SMp2+4Ii4mxm/aiSaLnvaB1lM6zknNZMpW0lucdQVqKH+HatUaHRc0EB1KgzSRU7jKxA/XWqHQ8lRk2Hnk5bVOWCu755DLbKquuZUV1KmxvF5TolDahhwh/DuCFa/UJ9G2eHdt/1/7Pb2w1Dx+9oyW4D6kjbxuYLuUjeeRBnRg/XUNQ6HPywC9b4jMgyu7bRnfKgXmM323FYRp3iybuK8BQpv7QbRbX3s4VEjEp/LbPqLBIqiSShy2lRloNI2YfCFyaOunYVSPCavXslzyURdx/l/RiweZe9YDUq03GL8QNs2vMmnS5ieVIqW6X2PNGZqitV5nXNnTPfU+mJk51vzv32C1vQQFZTJ9qBg57GAfp3WfRI3MVfx62ix8Zc1TTjevSB1ISQKRuqv5zFrMsx+5Ymj7mZxokkGqYA1/OS9SxWISZ8+nd9veYB4ykKA3qZEvmF3vaC559pY00IpjlSoI38cQADsSd1EivMhM9JuIxFpOmnLtZJyk1AvW47hxXgXupf099Vfea3ycBElk7eqQ="
+  file: .bintray.json

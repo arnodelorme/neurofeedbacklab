@@ -1,0 +1,40 @@
+version: 1.12.0.{build}
+pull_requests:
+  do_not_increment_build_number: true
+shallow_clone: true
+environment:
+  LSLVERSION: 1.12
+  OCTAVE_VER: 4.4.0-w64
+  VCVER: 14.0
+install:
+- cmd: >-
+    appveyor DownloadFile https://ftp.gnu.org/gnu/octave/windows/octave-%OCTAVE_VER%.7z -FileName octave.7z
+
+    7z x octave.7z -o"c:\dev" -y
+
+build_script:
+- cmd: >-
+    call "C:\Program Files (x86)\Microsoft Visual Studio %VCVER%\VC\vcvarsall.bat" x64
+
+    appveyor DownloadFile https://bintray.com/labstreaminglayer/LSL/download_file?file_path=liblsl_x64_%LSLVERSION%.zip -FileName liblsl.zip
+
+    7z x liblsl.zip
+
+    cp LSL/lib/liblsl64.dll bin/
+ 
+    c:\dev\octave-%OCTAVE_VER%\bin\octave-gui.exe --eval build_mex
+
+    del bin\*.o
+artifacts:
+- path: .
+  name: ${APPVEYOR_PROJECT_NAME}_x64_${APPVEYOR_BUILD_VERSION}
+deploy:
+- provider: BinTray
+  username: tstenner
+  api_key:
+    secure: Fo9tIQnGjVnCXB3euItvYrt85A5O9FPqq7LEpsdOuwW+eOg1rwA5Q1HLp4yWDXAl
+  subject: labstreaminglayer
+  version: 1.12
+  repo: LSL
+  package: liblsl-matlab
+  override: true

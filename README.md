@@ -6,7 +6,7 @@ A Neurofeedback software approach based on Matlab. There is no visual programmin
 
 - Matlab (including student versions)
 - Matlab psychophysics toolbox http://psychtoolbox.org/ if you want visual feedback (other options available)
-- BCILAB https://sccn.ucsd.edu/wiki/BCILAB
+- LSL install released code from https://github.com/labstreaminglayer/liblsl-Matlab (install release)
 
 # Features
 
@@ -59,29 +59,29 @@ Program settings are contained in the file [nfblab_options.m](src/nfblab_options
 - psychoToolbox (true/false), Toggle to false for testing without psych toolbox
 - adrBoard      (true/false), Toggle to true if using ADR101 board to send events to the EEG amplifier
 
-## LSL connection parameters
-- lsltype (string), put to empty if you cannot connect to your system
-- lslname (string), this is the name of the stream that shows in Lab Recorder f empty, it will only use the type above. USE lsl_resolve_byprop(lib, 'type', lsltype, 'name', lslname) to connect to the stream. If you cannot connect nfblab won't be able to connect either.
-
-## sessions parameters
+## sessions parameters g.session
 - baselineSessionDuration (integer), duration of baseline in second (the baseline is used to train the artifact removal ASR function)
 - sessionDuration (integer), regular sessions - here 5 minutes
 - ntrials (integer), number of trials per day
 - ndays   (integer), number of days of training
 
-## data acquisition parameters
+## LSL connection parameters g.input
+- lsltype (string), put to empty if you cannot connect to your system
+- lslname (string), this is the name of the stream that shows in Lab Recorder f empty, it will only use the type above. USE lsl_resolve_byprop(lib, 'type', lsltype, 'name', lslname) to connect to the stream. If you cannot connect nfblab won't be able to connect either.
+
+## data acquisition parameters g.input
 - nchans  (integer), number of channels with data
 - chans   (integer), indices of channels with data
 - mask    (floating point array), patial filter for feedback (here used channel 1). May be an ICA component or complex spatial filter.
-
-## data processing parameters
 - srateHardware (integer), sampling rate of the hardware
 - srate         (integer), sampling rate for processing data (must divide srateHardware)
 - windowSize (integer), length of window size for FFT (if equal to srate then 1 second)
-- nfft       (integer), length of FFT - allows FFT padding if necessary
 - windowInc  (integer), window increment - in this case update every 1/4 second
 
-## feedback parameters
+## data processing parameters g.input
+- nfft       (integer), length of FFT - allows FFT padding if necessary
+
+## feedback parameters g.feedback
 - theta   [min max]. Frequency range of interest. This program does not allow inhibition at other frequencies although it could be modified to do so
 - maxChange  (value from 0 to 1). Cap for change in feedback between processed windows every 1/4 sec. feedback is between 0 and 1 so this is 5% here
 - dynRange     [min max]. Initial power range in dB

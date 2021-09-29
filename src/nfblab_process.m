@@ -301,7 +301,7 @@ while 1
             g = nfblab_setfields(g, fieldJson{iField}, structResp.options.(fieldJson{iField}));
             
             % handle freqprocess parameter
-            if ~isempty(findstr(fieldJson{iField}, g.customfield.str))
+            if isfield(g, 'customfield') && ~isempty(findstr(fieldJson{iField}, g.customfield.str))
                 eval(g.customfield.func);
             end
             
@@ -418,7 +418,11 @@ while 1
         EEG.nbchan = length(g.input.chans);
         EEG.srate  = g.input.srate;
         EEG.xmin   = 0;
-        EEG.chanlocs = g.input.chanlocs(g.input.chans);
+        if isfield(g.input, 'chanlocs')
+            EEG.chanlocs = g.input.chanlocs(g.input.chans); % required for Loreta
+        else
+            EEG.chanlocs = [];
+        end
         % tmp = load('-mat','chanlocs.mat');
         % EEG.chanlocs = tmp.chanlocs;
         prevX      = [];
