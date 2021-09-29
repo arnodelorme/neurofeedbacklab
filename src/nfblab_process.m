@@ -34,59 +34,113 @@
 %  'freqrange' - [min max] frequency range in Hz. See nfblab_options for
 %               default value.
 
+% NOTE:
+% - remove "addfreqprocess"
+
 function nfblab_process(varargin)
 nfblab_options;
 try
-%    nfblab_options_additional; % additional options that overwritte the options above
+    nfblab_options_additional; % additional options that overwritte the options above
 catch
 end
+
+g = nfblab_setfields(g, varargin{:});
+
 import java.io.*; % for TCP/IP
 import java.net.*; % for TCP/IP
 
-% decode input parameters and overwrite defaults
-for iArg = 1:2:length(varargin)
-    if isstr(varargin{iArg+1})
-        eval( [ varargin{iArg} ' = ''' varargin{iArg+1} ''';'] );
-    else
-        eval( [ varargin{iArg} ' = ' num2str(varargin{iArg+1}) ';' ] );
+% load normalization file
+if ischar(g.measure.normfile) && ~isempty(g.measure.normfile)
+    g.measure.normfile = load('-mat', g.measure.normfile);
+    fields = fieldnames(g.measure.normfile);
+    if length(fields) == 1
+        g.measure.normfile = g.measure.normfile.(fields{1});
     end
 end
-if asrFlag == false
-    runmode = 'trial';
+
+% check field compatibility
+if ~g.session.TCPIP && strcmpi(g.session.runmode, 'slave')
+    g.session.runmode = [];
+end
+if g.preproc.asrFlag == false && isempty(g.session.runmode)
+    g.session.runmode = 'trial';
     disp('ASR disabled so skipping baseline');
 else
-    if filtFlag
-        error('ASR does its own filtering, disable ''filtFlag'' flag');
+    if g.preproc.asrFlag 
+        if g.preproc.filtFlag
+            error('ASR does its own filtering, disable ''filtFlag'' flag');
+        end
+        disp('Note: default ASR instroduces a delay - in our experience 1/4 second)');
     end
-    disp('Note: default ASR instroduces a delay - in our experience 1/4 second)');
 end
-if ~exist('runmode')
-    TCPIP = false;
+if isempty(g.session.runmode)
+    g.session.TCPIP = false;
     s = input('Do you want to run a baseline now (y/n)?', 's');
-    if strcmpi(s, 'y'), runmode = 'baseline';
-    elseif strcmpi(s, 'n'), runmode = 'trial';
+    if strcmpi(s, 'y'), g.session.runmode = 'baseline';
+    elseif strcmpi(s, 'n'), g.session.runmode = 'trial';
     else error('Unknown option');
     end
 end
+if ~isempty(g.measure.loreta_file) && exist(g.measure.loreta_file)
+    load('-mat', g.measure.loreta_file);
+    if ~exist('loreta_Networks')
+        g.measure.loreta_Networks.name = 'Network';
+        g.measure.loreta_Networks.ROI_inds = 1:length(loreta_ROIS);
+    end
+    ROI_list = unique([loreta_Networks.ROI_inds]);
+    
+    % add regions used for calculating z-score
+    freqloretaFields = fieldnames(g.measure.freqloreta);
+    tmpMat = ones(length(loreta_ROIS),length(g.measure.freqrange));
+    ROI_list_add = [];
+    for iField = 1:length(freqloretaFields)
+        for iROI = 1:length(loreta_ROIS)
+            tmpMat2 = tmpMat;
+            tmpMat2(iROI,:) = NaN;
+            if any(any(isnan( feval(g.measure.freqloreta.(freqloretaFields{iField}), tmpMat2) )))
+                ROI_list_add = [ROI_list_add iROI];
+            end
+        end
+    end
+    ROI_list = union(ROI_list, ROI_list_add);
+    
+end
+    
+% check if one need to extract events and if the windows are large enough
+% g.measure.evt does not change but evt does
+[evt,nonEventChans] = nfblab_epochcheck(g.measure.evt, g.input.chans, g.input.windowSize, g.input.windowInc, g.input.srateHardware, g.input.srate);
 
 % make sure the function can be run again
 onCleanup(@() nfblab_cleanup);
+chunkPerSec   = ceil(g.input.srate/g.input.windowInc);
 
-if ~strcmpi(runmode, 'trial') && ~strcmpi(runmode, 'baseline') && ~strcmpi(runmode, 'slave')
+% streaming file
+if ~isempty(g.input.streamFile)
+    [streamFileData, g.input.chanlocs] = nfblab_loadfile(g.input.streamFile);
+    if streamFileData.srate ~= g.input.srate
+        disp('Warning: Stream file sampling rate different from streaming rate ********* ');
+    end
+    disp('Warning: Processing data file, overwritting session duration');
+    g.session.baselineSessionDuration = ceil(size(streamFileData.data,2)/32);
+    g.session.sessionDuration         = ceil(size(streamFileData.data,2)/32);
+    eegPointer = 1;
+end
+
+if ~strcmpi(g.session.runmode, 'trial') && ~strcmpi(g.session.runmode, 'baseline') && ~strcmpi(g.session.runmode, 'slave')
     error('Wrong run type')
-elseif strcmpi(runmode, 'baseline')
+elseif strcmpi(g.session.runmode, 'baseline')
     % generate 1 command per second
     msg = [];
-    if isempty(streamFile)
+    if isempty(g.input.streamFile)
         msg(end+1).command = 'lslconnect';
     end
     msg(end+1).command = 'start';
     msg(end).options.runmode     = 'baseline';
-    msg(end+baselineSessionDuration*4).command = 'stop';
+    msg(end+g.session.baselineSessionDuration*chunkPerSec).command = 'stop';
     msg(end+1).command = 'quit';
     iMsg = 1;
-elseif strcmpi(runmode, 'trial')
-    if isequal(defaultNameAsr, fileNameAsr) && asrFlag == true
+elseif strcmpi(g.session.runmode, 'trial')
+    if isequal(g.session.fileNameAsrDefault, g.session.fileNameAsr) && (g.preproc.asrFlag || g.preproc.icaFlag)
         asrFiles = dir('asr_filter_*.mat');
         if isempty(asrFiles)
             error('No baseline file found in current folder, run baseline first');
@@ -97,35 +151,36 @@ elseif strcmpi(runmode, 'trial')
             end
             fprintf('------\n');
             iFile = input('Enter file number above to use for baseline:');
-            fileNameAsr = asrFiles(iFile).name;
+            g.session.fileNameAsr = asrFiles(iFile).name;
         end
     end
     % generate 1 command per second
     msg = [];
-    if isempty(streamFile)
+    if isempty(g.input.streamFile)
         msg(end+1).command = 'lslconnect';
     end
     msg(end+1).command = 'start';
     msg(end).options.runmode = 'trial';
-    msg(end+sessionDuration*4).command = 'stop';
+    msg(end+g.session.sessionDuration*chunkPerSec).command = 'stop';
+    msg(end+1).command = 'plotERSP';
     msg(end+1).command = 'quit';
     iMsg = 1;
 end
 
-dataBuffer     = zeros(length(chans), (windowSize*2)/srate*srateHardware);
-dataBufferFilt = zeros(length(chans), (windowSize*2)/srate*srateHardware);
+dataBuffer     = zeros(length(g.input.chans), (g.input.windowSize*2)/g.input.srate*g.input.srateHardware);
+dataBufferFilt = zeros(length(g.input.chans), (g.input.windowSize*2)/g.input.srate*g.input.srateHardware);
 dataBufferPointer = 1;
 
-dataAccuOri  = zeros(length(chans), (sessionDuration+3)*srate); % to save the data
-dataAccuFilt = zeros(length(chans), (sessionDuration+3)*srate); % to save the data
+dataAccuOri  = zeros(length(g.input.chans), (g.session.sessionDuration+3)*g.input.srate, 'single'); % to save the data
+dataAccuFilt = zeros(length(g.input.chans), (g.session.sessionDuration+3)*g.input.srate, 'single'); % to save the data
 dataAccuPointer = 1;
 feedbackVal    = 0.5;       % initial feedback value
 
 % create TCP/IP socket
 oldFeedback = 0;
-if TCPIP
-    if ~isnan(TCPport)
-        kkSocket  = ServerSocket( TCPport );
+if g.session.TCPIP
+    if ~isnan(g.session.TCPport)
+        kkSocket  = ServerSocket( g.session.TCPport );
         fprintf('Trying to accept connection from client (if program get stuck here, check client)...\n');
         connectionSocket = kkSocket.accept();
         outToClient  = PrintWriter(connectionSocket.getOutputStream(), true);
@@ -133,17 +188,17 @@ if TCPIP
     end
 end
 
-chunkMarker   = zeros(1, sessionDuration*10);
-chunkPower    = zeros(1, sessionDuration*10);
-chunkFeedback = zeros(1, sessionDuration*10);
-chunkDynRange = zeros(2, sessionDuration*10); % FIX THIS NOT INCREASED IN SIZE FOR CURTIS AND GENERATE CRASH WHEN SAVING BECAUSE OUT OF BOUND ARRAY
-chunkThreshold = zeros(1, sessionDuration*10);
+chunkMarker   = zeros(1, g.session.sessionDuration*chunkPerSec);
+chunkPower    = zeros(1, g.session.sessionDuration*chunkPerSec);
+chunkFeedback = zeros(1, g.session.sessionDuration*chunkPerSec);
+chunkDynRange = zeros(2, g.session.sessionDuration*chunkPerSec); % FIX THIS NOT INCREASED IN SIZE AND GENERATE CRASH WHEN SAVING BECAUSE OUT OF BOUND ARRAY
+chunkThreshold = zeros(1, g.session.sessionDuration*chunkPerSec);
 chunkCount    = 1;
 warning('off', 'MATLAB:subscripting:noSubscriptsSpecified'); % for ASR
 
 % create screen psycho toolbox
 % ----------------------------
-if psychoToolbox
+if g.feedback.psychoToolbox
     Screen('Preference', 'SkipSyncTests', 1);
     screenid = 0; % 1 = external screen
     %Screen('resolution', screenid, 800, 600, 60);
@@ -163,20 +218,23 @@ if psychoToolbox
     colArray = [ [10:250] [250:-1:128] [128:250] ];
 end
 
-if ~isempty(streamFile)
-    streamFileData = load('-mat', streamFile);
-    streamFileData = streamFileData.EEG;
-    eegPointer     = 1;
-end
-
 currentMode = 'pause';
 currentMsg  = '"Ready"';
+verbose = 1;
 inlet = [];
+fidRaw = [];
+
+% variables
+threshold = g.feedback.threshold;
+dynRange  = g.feedback.dynRange;
+
 while 1
     
     % wait for first command
-    fprintf('Feedback %s sent to client\n',currentMsg);
-    if TCPIP
+    if verbose > 0
+        fprintf('Feedback %s sent to client\n',currentMsg);
+    end
+    if g.session.TCPIP
         structResp = '';
         while isempty(structResp)
             outToClient.println(currentMsg)
@@ -206,7 +264,9 @@ while 1
             if ~isempty(structResp) 
                 if (isfield(structResp, 'command') && ~isempty(structResp.command)) ...
                 || (isfield(structResp, 'options') && ~isempty(structResp.options))
-                    fprintf(2, 'Message received: %s\n', response);
+                    if verbose > 0
+                        fprintf(2, 'Message received: %s\n', response);
+                    end
                 end
             end
         end
@@ -230,36 +290,26 @@ while 1
         if ~isempty(structResp.options)
             fieldJson = fieldnames(structResp.options);
         end
-        allowedFields = { 'runmode' 'fileNameAsr' 'fileNameOut' 'threshold' 'thresholdMem' ...
-            'thresholdMode' 'maxChange' 'dynRange' 'dynRangeDec' 'dynRangeInc' 'filtFlag' ...
-            'asrFlag' 'freqrange' 'freqdb' 'freqprocess' 'addfreqprocess' 'capdBchange' 'feedbackMode' ...
-            'chans' 'averefflag' 'chanmask' 'eLoretaFlag' 'lsltype' 'lslname' };
         for iField = 1:length(fieldJson)
-            if ~ismember(fieldJson{iField}, allowedFields)
-                fprintf('Unknown option "%s"\n', fieldJson{iField});
+            % show option to use
+            if ischar(structResp.options.(fieldJson{iField}))
+                fprintf('Decoding option %s: %s\n', fieldJson{iField}, structResp.options.(fieldJson{iField}));
             else
-                % show option to use
-                if ischar(structResp.options.(fieldJson{iField}))
-                    fprintf('Decoding option %s: %s\n', fieldJson{iField}, structResp.options.(fieldJson{iField}));
-                else
-                    fprintf('Decoding option %s (%s)\n', fieldJson{iField}, class(structResp.options.(fieldJson{iField})));
-                end
-                
-                eval( [ fieldJson{iField} ' = structResp.options.(fieldJson{iField});' ] );
-
-                % handle addfreqprocess parameter
-                if isequal(fieldJson{iField}, 'addfreqprocess')
-                    for iFieldProc = fieldnames(addfreqprocess)'
-                        freqprocess.(iFieldProc{1}) = addfreqprocess.(iFieldProc{1});
-                    end
-                end
-                
-                % handle freqprocess parameter
-                if ~isempty(findstr(fieldJson{iField}, 'freqprocess')) % freqprocess or addfreqprocess
-                    for iFieldProc = fieldnames(freqprocess)'
-                        if ischar(freqprocess.(iFieldProc{1}))
-                            freqprocess.(iFieldProc{1}) = eval(freqprocess.(iFieldProc{1}));
-                        end
+                fprintf('Decoding option %s (%s)\n', fieldJson{iField}, class(structResp.options.(fieldJson{iField})));
+            end
+            
+            g = nfblab_setfields(g, fieldJson{iField}, structResp.options.(fieldJson{iField}));
+            
+            % handle freqprocess parameter
+            if ~isempty(findstr(fieldJson{iField}, g.customfield.str))
+                eval(g.customfield.func);
+            end
+            
+            % handle freqprocess parameter
+            if ~isempty(findstr(fieldJson{iField}, 'freqprocess')) % freqprocess or addfreqprocess
+                for iFieldProc = fieldnames(g.measure.freqprocess)'
+                    if ischar(g.measure.freqprocess.(iFieldProc{1}))
+                        g.measure.freqprocess.(iFieldProc{1}) = eval(g.measure.freqprocess.(iFieldProc{1}));
                     end
                 end
             end
@@ -269,34 +319,36 @@ while 1
             % instantiate the LSL library
             disp('Loading the library...');
             lib = lsl_loadlib();
-
+            
             % resolve a stream...
             disp('Resolving an EEG stream...');
             result = {};
-            result = nfblab_findlslstream(lib,lsltype,lslname);
+            result = nfblab_findlslstream(lib,g.input.lsltype,g.input.lslname);
             disp('Opening an inlet...');
             inlet = lsl_inlet(result{1});
             disp('Now receiving chunked data...');
+            
         elseif strcmpi(structResp.command, 'start')
             chunkCount = 1; % restart all counters
-            fprintf('Starting new session...\n', fileNameAsr);
+            fprintf('Starting new session...\n', g.session.fileNameAsr);
             currentMode = 'run';
             stateAsr = [];
-            if strcmpi(runmode, 'trial') && asrFlag
-                fprintf('Loading baseline ASR file %s...\n', fileNameAsr);
-                stateFile = load('-mat', fileNameAsr);
-                dynRange = stateFile.dynRange;
-                if isfield(stateAsr, 'state')
-                    stateAsr = stateFile.state; % legacy
-                else
-                    stateAsr = stateFile.stateAsr;
-                end
+            if strcmpi(g.session.runmode, 'trial') && ( g.preproc.asrFlag || g.preproc.icaFlag )
+                [stateAsr, dynRange, g.preproc.icaWeights, g.preproc.icaWinv, g.preproc.icaRmInd] = nfblab_loadasr(g.session.fileNameAsr);
             end
+            
+            % check if a file for saving need to be created
+            if ~isempty(g.session.fileNameRaw)
+                EEG = nfblab_saveset(g.session.fileNameRaw, g.input.chans, g.input.srate, g.input.chanlabels);
+                fidRaw = fopen(EEG.data, 'wb');
+                if fidRaw == -1, fidRaw = []; end
+            end
+            
         elseif strcmpi(structResp.command, 'stop')
             if strcmpi(currentMode, 'paused')
                 disp('Cannot stop when in "paused" mode');
             else
-                fprintf('Ending session...\n', fileNameAsr);
+                fprintf('Ending session...\n', g.session.fileNameAsr);
                 % save state
                 chunkMarkerSave    = chunkMarker(1:chunkCount-1);
                 chunkPowerSave     = chunkPower(1:chunkCount-1);
@@ -307,34 +359,50 @@ while 1
                 % select calibration data
                 dataAccuOriSave  = dataAccuOri( :, 1:dataAccuPointer-1); % last second of data might be lost because still in buffer
                 dataAccuFiltSave = dataAccuFilt(:, 1:dataAccuPointer-1); % last second of data might be lost because still in buffer
-                if strcmpi(runmode, 'baseline')
-                    disp('Calibrating ASR...');
-                    stateAsr = asr_calibrate(dataAccuFiltSave, srateHardware);
-                    save('-mat', fileNameAsr, 'stateAsr', 'dynRange', 'dataAccuOriSave', 'dataAccuFiltSave', 'chunkMarkerSave', 'chunkPowerSave', 'chunkFeedbackSave', 'chunkDynRangeSave', 'chunkThresholdSave', 'srate', 'freqrange' );
-                    fprintf('Saving Baseline file %s\n', fileNameAsr);
+                
+                if strcmpi(g.session.runmode, 'baseline')
+                    if g.preproc.asrFlag
+                        disp('Calibrating ASR...');
+                        stateAsr = asr_calibrate(dataAccuFiltSave, g.input.srateHardware);
+                        dataAccuFiltSave(nonEventChans,:) = asr_process(dataAccuFiltSave(nonEventChans,:), g.input.srateHardware, stateAsr);
+                    end
+                    if g.preproc.icaFlag
+                        [icaWeights, icaWinv, icaRmInd] = nfblab_ica(dataAccuFiltSave(nonEventChans,:), EEG.srate, EEG.chanlocs);
+                        icaAct = icaWeights(icaRmInd,:)*dataAccuFiltSave(nonEventChans,:);
+                        dataAccuFiltSave(nonEventChans,:) = dataAccuFiltSave(nonEventChans,:)-icaWinv(:,icaRmInd)*icaAct;
+                    else
+                        [icaWeights, icaWinv, icaRmInd] = deal([]);
+                    end
+                    save('-mat', g.session.fileNameAsr, 'stateAsr', 'dynRange', 'dataAccuOriSave', 'dataAccuFiltSave', 'chunkMarkerSave', 'chunkPowerSave', 'chunkFeedbackSave', 'chunkDynRangeSave', 'chunkThresholdSave', 'icaWeights', 'icaWinv', 'icaRmInd', 'g');
+                    fprintf('Saving Baseline file %s\n', g.session.fileNameAsr);
                 else
                     % close text file
-                    save('-mat', fileNameOut, 'stateAsr', 'dynRange', 'dataAccuOriSave', 'dataAccuFiltSave', 'chunkMarkerSave', 'chunkPowerSave', 'chunkFeedbackSave', 'chunkDynRangeSave', 'chunkThresholdSave', 'srate', 'freqrange' );
-                    fprintf('Saving file %s\n', fileNameOut);
+                    save('-mat', g.session.fileNameOut, 'stateAsr', 'dynRange', 'dataAccuOriSave', 'dataAccuFiltSave', 'chunkMarkerSave', 'chunkPowerSave', 'chunkFeedbackSave', 'chunkDynRangeSave', 'chunkThresholdSave', 'g');
+                    fprintf('Saving file %s\n', g.session.fileNameOut);
                 end
 
                 currentMode = 'pause';
                 currentMsg  = '"paused"';
                 chunkCount    = 1;
+                if ~isempty(fidRaw), fclose(fidRaw); fidRaw = []; end
             end
         elseif strcmpi(structResp.command, 'quit')
             fprintf('Quitting...\n');
-            if TCPIP
+            if g.session.TCPIP
                 connectionSocket.close();
                 kkSocket.close();
             end
+            if ~isempty(fidRaw), fclose(fidRaw); fidRaw = []; end
             break;
         elseif strcmpi(structResp.command, 'disconnect')
             fprintf('Disconnecting...\n');
-            if TCPIP
+            if g.session.TCPIP
                 connectionSocket.close();
             end
             currentMode = 'disconnected';
+            if ~isempty(fidRaw), fclose(fidRaw); fidRaw = []; end
+        elseif strcmpi(structResp.command, 'plotERSP')
+            nfblab_epochersp(evt, g.input.srate);
         elseif ~isempty(structResp.command)
             fprintf('Unknown command: %s\n', structResp.command);
         end
@@ -342,43 +410,48 @@ while 1
     
     % run mode
     if strcmpi(currentMode, 'run')
-        
-        % frequencies for spectral decomposition
-        freqs  = linspace(0, srate/2, floor(nfft/2));
-        freqs     = freqs(2:end); % remove DC (match the output of PSD)
-        
+                
         %% create a new inlet
         tic;
         state = [];
         EEG = eeg_emptyset;
-        EEG.nbchan = length(chans);
-        EEG.srate  = srate;
+        EEG.nbchan = length(g.input.chans);
+        EEG.srate  = g.input.srate;
         EEG.xmin   = 0;
-        prevX      = [];
+        EEG.chanlocs = g.input.chanlocs(g.input.chans);
         % tmp = load('-mat','chanlocs.mat');
         % EEG.chanlocs = tmp.chanlocs;
-        winPerSec = windowSize/windowInc;
-        chunkSize = windowInc*srateHardware/srate; % at 512 so every 1/4 second is 128 samples
+        prevX      = [];
+        winPerSec = g.input.windowSize/g.input.windowInc;
+        chunkSize = g.input.windowInc*g.input.srateHardware/g.input.srate; % at 512 so every 1/4 second is 128 samples
         tic;
         
         lastChunkTime = [];
-        freqprocessFields = fieldnames(freqprocess);
+        if isempty(g.measure.freqprocess)
+            freqprocessFields = {};
+        else
+            freqprocessFields = fieldnames(g.measure.freqprocess);
+        end
         
         % pause between each loop
-        pause(pauseSecond);
+        pause(g.session.pauseSecond);
         
         % get chunk from the inlet
         currentMsg = '"Streaming"';
-        if isempty(streamFile) 
+        if isempty(g.input.streamFile) 
             if ~isempty(inlet)
                 [chunk,~] = inlet.pull_chunk();
-                %fprintf('Size of chuck: %d,%d\n', size(chunk,1), size(chunk,2));
+                % fprintf('Size of chuck: %d,%d\n', size(chunk,1), size(chunk,2));
             else
                 chunk = [];
             end
         else
             if eegPointer+31 > size(streamFileData.data,2)
-                break;
+                chunk = streamFileData.data(:,eegPointer:end);
+                eegPointer = size(streamFileData.data,2)+1;
+                msg(iMsg).command = 'stop';
+                msg(iMsg+1).command = 'quit';
+                msg(iMsg+2:end) = [];
             else
                 chunk = streamFileData.data(:,eegPointer:eegPointer+31);
                 eegPointer = eegPointer+32;
@@ -398,20 +471,32 @@ while 1
             end
             
             % subset of channels
-            chunk = chunk(chans,:);
+            chunk = chunk(g.input.chans,:);
+
+            % write raw data
+            if ~isempty(fidRaw)
+                fwrite(fidRaw, chunk, 'float');
+            end
             
             % filter chunk
-            if filtFlag
+            if g.preproc.filtFlag
                 if size(chunk,2) == 1, error('Filter cannot process a single sample - increase ''pauseSecond'' parameter'); end
-                [chunkFilt,state] = filter(B,A,chunk',state);
+                chunkFilt = chunk';
+                [chunkFilt(:,nonEventChans),state] = filter(g.preproc.B,g.preproc.A,chunk(nonEventChans,:)',state);
                 chunkFilt = chunkFilt';
             else
                 chunkFilt = chunk;
             end
             
             % apply ASR on chunk
-            if asrFlag && ~strcmpi(runmode, 'baseline')
-                [chunkFilt, stateAsr]= asr_process(chunkFilt, srateHardware, stateAsr);
+            if g.preproc.asrFlag && ~strcmpi(g.session.runmode, 'baseline')
+                [chunkFilt(nonEventChans,:), stateAsr]= asr_process(chunkFilt(nonEventChans,:), g.input.srateHardware, stateAsr);
+            end
+            
+            % apply ICA
+            if g.preproc.icaFlag && ~strcmpi(g.session.runmode, 'baseline')
+                icaAct = g.preproc.icaWeights(g.preproc.icaRmInd,:)*chunkFilt(nonEventChans,:);
+                chunkFilt(nonEventChans,:) = chunkFilt(nonEventChans,:)-g.preproc.icaWinv(:,g.preproc.icaRmInd)*icaAct;
             end
             
             % copy data to buffers
@@ -424,10 +509,10 @@ while 1
         if dataBufferPointer > chunkSize
             
             % estimate sampling rate
-            if ~isempty(lastChunkTime) && warnsrate
+            if ~isempty(lastChunkTime) && g.session.warnsrate
                 sRateEstimated = chunkSize/(toc - lastChunkTime);
-                if abs(srateHardware-sRateEstimated) > 0.1*srateHardware
-                    fprintf('Warning: estimated heart rate %d Hz compared to %d Hz set in nfblab_options.m\n', round(sRateEstimated), round(srateHardware));
+                if abs(g.input.srateHardware-sRateEstimated) > 0.1*g.input.srateHardware
+                    fprintf('Warning: estimated heart rate %d Hz compared to %d Hz set in nfblab_options.m\n', round(sRateEstimated), round(g.input.srateHardware));
                 end
             end
             lastChunkTime = toc;
@@ -446,23 +531,29 @@ while 1
             %fprintf('Data buffer pointer decreased: %d\n', dataBufferPointer);
             
             if dataAccuPointer > chunkSize*winPerSec
+                results = [];
                 
                 % Decimate and create EEG structure of 1 second
-                if srateHardware == srate
+                if g.input.srateHardware == g.input.srate
                     EEG.data = dataAccuFilt(:,dataAccuPointer-chunkSize*winPerSec:dataAccuPointer-1);
-                elseif srateHardware == 2*srate
+                elseif g.input.srateHardware == 2*g.input.srate
                     EEG.data = dataAccuFilt(:,dataAccuPointer-chunkSize*winPerSec:2:dataAccuPointer-1);
-                elseif srateHardware == 4*srate
+                elseif g.input.srateHardware == 4*g.input.srate
                     EEG.data = dataAccuFilt(:,dataAccuPointer-chunkSize*winPerSec:4:dataAccuPointer-1);
-                elseif srateHardware == 8*srate
+                elseif g.input.srateHardware == 8*g.input.srate
                     EEG.data = dataAccuFilt(:,dataAccuPointer-chunkSize*winPerSec:8:dataAccuPointer-1);
                 else
                     error('Processing sampling rate not a multiple of hardware acquisition sampling rate');
                 end
+
+                % process event information if any
+                [evt,epochFeedback] = nfblab_epochprocess(EEG, evt); % param 3, true or false for verbose
+                if exist('results') && isfield(results, 'epochFeedback'), results = rmfield(results, 'epochFeedback'); end
+                if ~isempty(epochFeedback), results.epochFeedback = epochFeedback; end
                 
                 % rereference
                 %EEG.data = bsxfun(@minus, EEG.data,mean(EEG.data([24 61],:))); % P9 and P10
-                if averefflag
+                if g.preproc.averefFlag || g.measure.loretaFlag
                     EEG.data = bsxfun(@minus, EEG.data, mean(EEG.data)); % average reference
                 end
                 
@@ -470,48 +561,122 @@ while 1
                 EEG.pnts = size(EEG.data,2);
                 EEG.nchan = size(EEG.data,1);
                 EEG.xmax = EEG.pnts/EEG.srate;
-                
-                if eLoretaFlag
+                if g.measure.loretaFlag              
                     % project to source space
-                    source_voxel_data = reshape(EEG.data(:, :)'*P_eloreta(:, :), EEG.pnts*EEG.trials, nvox, 3);
+                    source_voxel_data = reshape(EEG.data(:, :)'*loreta_P(:, :), size(EEG.data,2), size(loreta_P,2), 3);
                     
-                    % select voxels of interest and average
-                    source_roi_data = mean(abs(source_voxel_data(:,ind_roi,:),3),2)';
-                else
-                    % Apply linear transformation (get channel Fz at that point)
-                    spatiallyFilteredData = chanmask*EEG.data;
+                    % Computing spectrum
+                    sz = size(source_voxel_data);
+                    tmpdata = reshape(source_voxel_data, sz(1), sz(2)*sz(3));
+                    source_voxel_spec = pwelch(tmpdata, EEG.srate, EEG.srate/2, EEG.srate); % assuming 1 second of data
+                    source_voxel_spec = reshape(source_voxel_spec, size(source_voxel_spec,1), sz(2), sz(3));
+                    source_voxel_spec = mean(source_voxel_spec(2:size(source_voxel_spec,1),:,:),3); % frequency selection 2 to 31 (1Hz to 30Hz)
+                    freqs  = linspace(0, EEG.srate/2, floor(g.measure.nfft/2)+1);
+                    freqs  = freqs(2:end); % remove DC (match the output of PSD)
+                    
+                    % Compute ROI activity
+                    for ind_roi = ROI_list
+                        % data used for connectivity analysis
+                        spatiallyFilteredData(ind_roi,:) = roi_getact( source_voxel_data, loreta_ROIS(ind_roi).Vertices, 1, 0); % Warning no zscore here; also PCA=1 is too low
+                        spatiallyFilteredSpec(ind_roi,:) = roi_getact( source_voxel_spec, loreta_ROIS(ind_roi).Vertices, 1, 0);
+                    end
+                    loretaSpec = spatiallyFilteredSpec';
+                    
+                    % select frequency bands
+                    for iSpec = 1:length(g.measure.freqrange)
+                        freqRangeTmp = intersect( find(freqs >= g.measure.freqrange{iSpec}(1)), find(freqs <= g.measure.freqrange{iSpec}(2)) );
+                        loretaSpecSelect(:,iSpec) = mean(abs(loretaSpec(freqRangeTmp,:)).^2,1); % mean power in frequency range
+                        if g.measure.freqdb
+                            loretaSpecSelect(:,iSpec) = 10*log10(abs(loretaSpecSelect(:,iSpec)).^2);
+                        end
+                    end
+                    
+                    % compute metric of interest
+                    for iProcess = 1:length(freqloretaFields)
+                        results.(freqloretaFields{iProcess}) = feval(g.measure.freqloreta.(freqloretaFields{iProcess}), loretaSpecSelect);
+                    end
+
+                    % compute cross-spectral density for each network
+                    % -----------------------------------------------
+                    if ~isempty(g.measure.connectprocess)
+                        for iNet = 1:length(loreta_Networks)
+                            
+                            if 1
+                                restmp = roi_network( spatiallyFilteredData, loreta_Networks(iNet).ROI_inds, 'nfft', g.measure.nfft, 'postprocess', g.measure.connectprocess, 'freqranges', g.measure.freqrange);
+                                % copy results
+                                fields = fieldnames(restmp);
+                                for iField = 1:length(fields)
+                                    results.([ loreta_Networks(iNet).name '_' fields{iField} ]) = restmp.(fields{iField});
+                                end
+                            else
+                                networkData = spatiallyFilteredData(loreta_Networks(iNet).ROI_inds,:);
+                                S = cpsd_welch(networkData,size(networkData,2),0,g.measure.nfft);
+                                [nchan, nchan, nfreq] = size(S);
+                                
+                                % imaginary part of cross-spectral density
+                                % ----------------------------------------
+                                absiCOH = S;
+                                for ifreq = 1:nfreq
+                                    absiCOH(:, :, ifreq) = squeeze(S(:, :, ifreq)) ./ sqrt(diag(squeeze(S(:, :, ifreq)))*diag(squeeze(S(:, :, ifreq)))');
+                                end
+                                absiCOH = abs(imag(absiCOH));
+                                
+                                % frequency selection
+                                % -------------------
+                                connectSpecSelect = zeros(size(absiCOH,1), size(absiCOH,2), length(g.measure.freqrange));
+                                for iSpec = 1:length(g.measure.freqrange)
+                                    freqRangeTmp = intersect( find(freqs >= g.measure.freqrange{iSpec}(1)), find(freqs <= g.measure.freqrange{iSpec}(2)) );
+                                    connectSpecSelect(:,:,iSpec) = mean(absiCOH(:,:,freqRangeTmp),3); % mean power in frequency range
+                                end
+                                
+                                connectprocessFields = fieldnames(g.measure.connectprocess);
+                                for iProcess = 1:length(connectprocessFields)
+                                    results.([ loreta_Networks(iNet).name '_' connectprocessFields{iProcess} ]) = feval(g.measure.connectprocess.(connectprocessFields{iProcess}), connectSpecSelect);
+                                end
+                            end
+                        end
+                    end
                 end
                 
-                % step to get ROI activity
-                % - compute leadfield
-                % - compute Loreta solution
-                % - extract voxels of interest
-                % - average
-                
-                % Perform spectral decomposition
-                % taper the data with hamming
-                dataSpec = fft(bsxfun(@times, spatiallyFilteredData', hamming(size(spatiallyFilteredData,2))), nfft);
+                % Apply linear transformation (get channel Fz at that point)
+                spatiallyFilteredData = g.input.chanmask*EEG.data;
+
+                % Perform spectral decomposition - taper the data with hamming
+                dataSpec = fft(bsxfun(@times, spatiallyFilteredData', hamming(size(spatiallyFilteredData,2))), g.measure.nfft);
+                freqs  = linspace(0, EEG.srate/2, floor(g.measure.nfft/2)+1);
+                freqs  = freqs(2:end); % remove DC (match the output of PSD)
                 
                 % select frequency bands
-                dataSpecSelect = zeros(size(spatiallyFilteredData,1), length(freqrange));
-                for iSpec = 1:length(freqrange)
-                    freqRangeTmp = intersect( find(freqs >= freqrange{iSpec}(1)), find(freqs <= freqrange{iSpec}(2)) );
+                dataSpecSelect = zeros(size(spatiallyFilteredData,1), length(g.measure.freqrange));
+                for iSpec = 1:length(g.measure.freqrange)
+                    freqRangeTmp = intersect( find(freqs >= g.measure.freqrange{iSpec}(1)), find(freqs <= g.measure.freqrange{iSpec}(2)) );
                     dataSpecSelect(:,iSpec) = mean(abs(dataSpec(freqRangeTmp,:)).^2,1); % mean power in frequency range
-                    if freqdb
+                    if g.measure.freqdb
                         dataSpecSelect(:,iSpec) = 10*log10(abs(dataSpecSelect(:,iSpec)).^2);
                     end
                 end
                 
                 % compute metric of interest
                 for iProcess = 1:length(freqprocessFields)
-                    results.(freqprocessFields{iProcess}) = feval(freqprocess.(freqprocessFields{iProcess}), dataSpecSelect);
+                    results.(freqprocessFields{iProcess}) = feval(g.measure.freqprocess.(freqprocessFields{iProcess}), dataSpecSelect);
                 end
-                X = results.(freqprocessFields{end}); % last item on the list
+                
+                % normalize all fields
+                if ~isempty(g.measure.normfile)
+                    results = nfblab_zscore(results, g.measure.normfile, agerange);
+                end
+                
+                % get feedback field
+                if ~isempty(g.feedback.feedbackfield)
+                    X = results.(g.feedback.feedbackfield);
+                else
+                    X = Inf;
+                end
                 
                 % cap spectral change for feedback measure
                 if ~isempty(prevX)
-                    if X > prevX+capdBchange, X = prevX+capdBchange; end
-                    if X < prevX-capdBchange, X = prevX-capdBchange; end
+                    if X > prevX+g.feedback.capdBchange, X = prevX+g.feedback.capdBchange; end
+                    if X < prevX-g.feedback.capdBchange, X = prevX-g.feedback.capdBchange; end
                 end
                 prevX = X;
                 
@@ -521,42 +686,64 @@ while 1
                 chunkFeedback( chunkCount) = 0;
                 chunkDynRange(:,chunkCount) = 0;
                 chunkThreshold(chunkCount) = 0;
-                if chunkCount > sessionDuration*10
-                    disp('Standard buffer size exceedeed - we recommend increasing sessionDuration');
+                if chunkCount > g.session.sessionDuration*chunkPerSec
+                    disp('Standard buffer size exceeded - we recommend increasing session duration');
                 end
                 
                 if ~isinf(X)
-                    if strcmpi(feedbackMode, 'dynrange')
+                    if strcmpi(g.feedback.feedbackMode, 'dynrange')
                         % assess if value position within a range
                         % and return output from 0 to 1
                         totalRange = dynRange(2)-dynRange(1);
                         feedbackValTmp = (X-dynRange(1))/totalRange;
-                        if feedbackValTmp > 1, dynRange(2) = dynRange(2)+dynRangeInc*totalRange; feedbackValTmp = 1;
-                        else                   dynRange(2) = dynRange(2)-dynRangeDec*totalRange;
+                        if feedbackValTmp > 1, dynRange(2) = dynRange(2)+g.feedback.dynRangeInc*totalRange; feedbackValTmp = 1;
+                        else                   dynRange(2) = dynRange(2)-g.feedback.dynRangeDec*totalRange;
                         end
-                        if feedbackValTmp < 0, dynRange(1) = dynRange(1)-dynRangeInc*totalRange; feedbackValTmp = 0;
-                        else                   dynRange(1) = dynRange(1)+dynRangeDec*totalRange;
+                        if feedbackValTmp < 0, dynRange(1) = dynRange(1)-g.feedback.dynRangeInc*totalRange; feedbackValTmp = 0;
+                        else                   dynRange(1) = dynRange(1)+g.feedback.dynRangeDec*totalRange;
                         end
                         if feedbackValTmp<feedbackVal
-                            if abs(feedbackValTmp-feedbackVal) > maxChange, feedbackVal = feedbackVal-maxChange;
-                            else                                            feedbackVal = feedbackValTmp;
+                            if abs(feedbackValTmp-feedbackVal) > g.feedback.maxChange, feedbackVal = feedbackVal-g.feedback.maxChange;
+                            else                                              feedbackVal = feedbackValTmp;
                             end
                         else
-                            if abs(feedbackValTmp-feedbackVal) > maxChange, feedbackVal = feedbackVal+maxChange;
-                            else                                            feedbackVal = feedbackValTmp;
-                            end
+                            if abs(feedbackValTmp-feedbackVal) > g.feedback.maxChange, feedbackVal = feedbackVal+g.feedback.maxChange;
+                            else                                              feedbackVal = feedbackValTmp;
+                            end  
                         end
                         chunkDynRange(:,chunkCount) = dynRange;
                         % fprintf('Spectral power %2.3f - output %1.2f - %1.2f [%1.2f %1.2f]\n', X, feedbackVal, feedbackValTmp, dynRange(1), dynRange(2));
-                    elseif strcmpi(feedbackMode, 'threshold')
+                    elseif strcmpi(g.feedback.feedbackMode, 'threshold')
                         % simply assess if value above threshold
                         % and return binary output
-                        feedbackVal = X > threshold;
-                        if strcmpi(thresholdMode, 'stop')
-                            feedbackVal = ~feedbackVal;
+                        if strcmpi(g.feedback.thresholdMode, 'stop')
+                             feedbackVal = X < threshold;
+                        else feedbackVal = X > threshold;
                         end
-                        threshold = threshold*thresholdMem + X*(1-thresholdMem);
+                        
+                        % recompute threshold
+                        threshold = threshold*g.feedback.thresholdMem + X*(1-g.feedback.thresholdMem);
+                        
+                        % use percentage over a past window
+                        chunkPerSecFloat = EEG.srate/g.input.windowInc;
+                        if chunkCount > g.feedback.thresholdWin*chunkPerSecFloat
+                            if strcmpi(g.feedback.thresholdMode, 'stop')
+                                 threshold = quantile(chunkPower(chunkCount-floor(g.feedback.thresholdWin*chunkPerSecFloat):chunkCount), g.feedback.thresholdPer);
+                            else threshold = quantile(chunkPower(chunkCount-floor(g.feedback.thresholdWin*chunkPerSecFloat):chunkCount), 1-g.feedback.thresholdPer);
+                            end
+                        else
+                            if strcmpi(g.feedback.thresholdMode, 'stop')
+                                 threshold = quantile(chunkPower(1:chunkCount), g.feedback.thresholdPer);
+                            else threshold = quantile(chunkPower(1:chunkCount), 1-g.feedback.thresholdPer);
+                            end
+                        end
                         chunkThreshold(chunkCount) = threshold;
+                        %results.thresholdMem = thresholdMem;
+                        %results.thresholdWin = thresholdWin;
+                        %results.chunkPerSecFloat = chunkPerSecFloat;
+                        results.thresholdPer = g.feedback.thresholdPer;
+                        %results.chunkCount = chunkCount;
+                        
                         % fprintf('Spectral power %2.3f - output %1.0f - threshold %1.2f\n', X, feedbackVal, threshold);
                     end
                 end
@@ -573,8 +760,8 @@ while 1
                 oldFeedback = feedbackVal;
                 
                 % visual output through psychoToolbox
-                if strcmpi(runmode, 'trial') 
-                    if simplePlot
+                if strcmpi(g.session.runmode, 'trial') 
+                    if g.feedback.simplePlot
                         if chunkCount < 22
                             tmpPower = chunkPower(1:20);
                             tmpPower(tmpPower == 0) = NaN;
@@ -584,7 +771,7 @@ while 1
                         end
                         title('Spectral power');
                     end
-                	if psychoToolbox
+                	if g.feedback.psychoToolbox
                         colIndx = ceil((feedbackVal+0.001)*254);
                         Screen('FillPoly', window ,[0 0 colArray(colIndx)], [ xpos1 ypos1; xpos2 ypos1; xpos2 ypos2; xpos1 ypos2], 1);
                         Screen('Flip', window);
@@ -596,6 +783,20 @@ while 1
     
 end
 
-if psychoToolbox
+if g.feedback.psychoToolbox
     Screen('Closeall');
 end
+
+function S = cpsd_welch(X,window,noverlap, nfft)
+
+h = nfft/2+1;
+n = size(X,1);
+S = complex(zeros(n,n,h));
+for i = 1:n
+    S(i,i,:) = pwelch(X(i,:),window,noverlap,nfft);          % auto-spectra
+    for j = i+1:n % so we don't compute cross-spectra twice
+        S(i,j,:) = cpsd(X(i,:),X(j,:),window,noverlap,nfft); % cross-spectra
+    end
+end
+S = S/pi; % the 'pi' is for compatibility with 'autocov_to_cpsd' routine
+
