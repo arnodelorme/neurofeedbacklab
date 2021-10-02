@@ -6,10 +6,10 @@ A Neurofeedback software approach based on Matlab. There is no visual programmin
 
 - Matlab (including student versions)
 - EEGLAB from https://eeglab.org
--- After installing EEGLAB, install the following plugins from the EEGLAB plugin manage (menu item File > Manage extension)
--- PICARD
--- Update the clean_rawdata plugin to version 2.5 or later
--- ROICONNECT if you want to use connectivity analysis from https://github.com/arnodelorme/roiconnect
+  - After installing EEGLAB, install the following plugins from the EEGLAB plugin manage (menu item File > Manage extension)
+  - PICARD
+  - Update the clean_rawdata plugin to version 2.5 or later
+  - ROICONNECT if you want to use connectivity analysis from https://github.com/arnodelorme/roiconnect
 - LSL install released code from https://github.com/labstreaminglayer/liblsl-Matlab (install release which contains binary)
 - Matlab psychophysics toolbox http://psychtoolbox.org/ if you want visual feedback (other options available)
 
