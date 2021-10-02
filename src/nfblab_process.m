@@ -5,9 +5,30 @@
 % Usage:
 %    nfblab_process(key, val, ...)
 %
-% Parameters. See file nfblab_options for default values. Only the most
-% important parameters are indicated below but all parameters of this
-% file may be changed when calling the function.
+% Parameters. Type nfblab_process(help, true) for help on parameters.
+
+
+
+% this is the name of the stream that shows in Lab Recorder
+% if empty, it will only use the type above
+% USE lsl_resolve_byprop(lib, 'type', lsltype, 'name', lslname)
+% to connect to the stream. If you cannot connect
+% nfblab won't be able to connect either.
+
+% sessions parameters for baseline and actual session in second
+% baseline only need to be run once to set ASR filter parameters
+% if not using ASR, baseline can be skipped
+
+
+% Threshold mode. The threshold mode simply involve
+% activity going above or below a threshold and parameter for how this
+% threshold evolve. The output is binary. 
+
+% Dynamic range mode. In this mode, the output is continuous
+% between 0 and 1 (position in the range). Parameters dynRange, 
+% dynRangeDec, dynRangeInc  how the range
+
+
 %
 %  'runmode' - 'trial' or 'baseline' a baseline must be run at the
 %              beginning to assess baseline values and ASR rejection
@@ -38,49 +59,15 @@
 % - remove "addfreqprocess"
 
 function nfblab_process(varargin)
-nfblab_options;
-try
-    nfblab_options_additional; % additional options that overwritte the options above
-catch
-end
 
-g = nfblab_setfields(g, varargin{:});
+g = nfblab_setfields([], varargin{:});
+if isempty(g), return; end
+
+% g.session.runmode = [];
 
 import java.io.*; % for TCP/IP
 import java.net.*; % for TCP/IP
 
-% load normalization file
-if ischar(g.measure.normfile) && ~isempty(g.measure.normfile)
-    g.measure.normfile = load('-mat', g.measure.normfile);
-    fields = fieldnames(g.measure.normfile);
-    if length(fields) == 1
-        g.measure.normfile = g.measure.normfile.(fields{1});
-    end
-end
-
-% check field compatibility
-if ~g.session.TCPIP && strcmpi(g.session.runmode, 'slave')
-    g.session.runmode = [];
-end
-if g.preproc.asrFlag == false && isempty(g.session.runmode)
-    g.session.runmode = 'trial';
-    disp('ASR disabled so skipping baseline');
-else
-    if g.preproc.asrFlag 
-        if g.preproc.filtFlag
-            error('ASR does its own filtering, disable ''filtFlag'' flag');
-        end
-        disp('Note: default ASR instroduces a delay - in our experience 1/4 second)');
-    end
-end
-if isempty(g.session.runmode)
-    g.session.TCPIP = false;
-    s = input('Do you want to run a baseline now (y/n)?', 's');
-    if strcmpi(s, 'y'), g.session.runmode = 'baseline';
-    elseif strcmpi(s, 'n'), g.session.runmode = 'trial';
-    else error('Unknown option');
-    end
-end
 if ~isempty(g.measure.loreta_file) && exist(g.measure.loreta_file)
     load('-mat', g.measure.loreta_file);
     if ~exist('loreta_Networks')
@@ -118,12 +105,14 @@ chunkPerSec   = ceil(g.input.srate/g.input.windowInc);
 if ~isempty(g.input.streamFile)
     [streamFileData, g.input.chanlocs] = nfblab_loadfile(g.input.streamFile);
     if streamFileData.srate ~= g.input.srate
-        disp('Warning: Stream file sampling rate different from streaming rate ********* ');
+        fprintf(2, 'Warning: Stream file sampling rate different from streaming rate ********* ');
     end
     disp('Warning: Processing data file, overwritting session duration');
     g.session.baselineSessionDuration = ceil(size(streamFileData.data,2)/32);
     g.session.sessionDuration         = ceil(size(streamFileData.data,2)/32);
-    eegPointer = 1;
+    if isempty(g.input.chans)
+        g.input.chans = 1:streamFileData.nbchan;
+    end
 end
 
 if ~strcmpi(g.session.runmode, 'trial') && ~strcmpi(g.session.runmode, 'baseline') && ~strcmpi(g.session.runmode, 'slave')
@@ -140,7 +129,7 @@ elseif strcmpi(g.session.runmode, 'baseline')
     msg(end+1).command = 'quit';
     iMsg = 1;
 elseif strcmpi(g.session.runmode, 'trial')
-    if isequal(g.session.fileNameAsrDefault, g.session.fileNameAsr) && (g.preproc.asrFlag || g.preproc.icaFlag)
+    if isequal(g.session.fileNameAsrDefault, g.session.fileNameAsr) && (g.preproc.asrFlag || g.preproc.icaFlag || g.preproc.badchanFlag)
         asrFiles = dir('asr_filter_*.mat');
         if isempty(asrFiles)
             error('No baseline file found in current folder, run baseline first');
@@ -221,8 +210,10 @@ end
 currentMode = 'pause';
 currentMsg  = '"Ready"';
 verbose = 1;
-inlet = [];
+inlet  = [];
 fidRaw = [];
+state  = [];
+eegPointer = 1; % for offline file
 
 % variables
 threshold = g.feedback.threshold;
@@ -333,8 +324,8 @@ while 1
             fprintf('Starting new session...\n', g.session.fileNameAsr);
             currentMode = 'run';
             stateAsr = [];
-            if strcmpi(g.session.runmode, 'trial') && ( g.preproc.asrFlag || g.preproc.icaFlag )
-                [stateAsr, dynRange, g.preproc.icaWeights, g.preproc.icaWinv, g.preproc.icaRmInd] = nfblab_loadasr(g.session.fileNameAsr);
+            if strcmpi(g.session.runmode, 'trial') && ( g.preproc.asrFlag || g.preproc.icaFlag || g.preproc.badchanFlag )
+                [stateAsr, dynRange, g.preproc.icaWeights, g.preproc.icaWinv, g.preproc.icaRmInd, g.preproc.badChans] = nfblab_loadasr(g.session.fileNameAsr);
             end
             
             % check if a file for saving need to be created
@@ -361,19 +352,25 @@ while 1
                 dataAccuFiltSave = dataAccuFilt(:, 1:dataAccuPointer-1); % last second of data might be lost because still in buffer
                 
                 if strcmpi(g.session.runmode, 'baseline')
+                    if g.preproc.badchanFlag
+                        disp('Detecting bad channels...');
+                        badChans = nfblab_badchans(dataAccuFiltSave(nonEventChans,:), EEG.srate, g.input.chanlocs, g.preproc.chanCorr);
+                    else
+                        badChans = [];
+                    end
                     if g.preproc.asrFlag
                         disp('Calibrating ASR...');
-                        stateAsr = asr_calibrate(dataAccuFiltSave, g.input.srateHardware);
-                        dataAccuFiltSave(nonEventChans,:) = asr_process(dataAccuFiltSave(nonEventChans,:), g.input.srateHardware, stateAsr);
+                        stateAsr = asr_calibrate(dataAccuFiltSave, g.input.srateHardware, g.preproc.asrCutoff, [], [], [], [], [], [], [], 64);
+                        dataAccuFiltSave(nonEventChans,:) = asr_process(dataAccuFiltSave(nonEventChans,:), g.input.srateHardware, stateAsr, [],[],[],[],64);
                     end
                     if g.preproc.icaFlag
-                        [icaWeights, icaWinv, icaRmInd] = nfblab_ica(dataAccuFiltSave(nonEventChans,:), EEG.srate, EEG.chanlocs);
+                        [icaWeights, icaWinv, icaRmInd] = nfblab_ica(dataAccuFiltSave(nonEventChans,:), EEG.srate, EEG.chanlocs, g.preproc.averefFlag+length(badChans));
                         icaAct = icaWeights(icaRmInd,:)*dataAccuFiltSave(nonEventChans,:);
                         dataAccuFiltSave(nonEventChans,:) = dataAccuFiltSave(nonEventChans,:)-icaWinv(:,icaRmInd)*icaAct;
                     else
                         [icaWeights, icaWinv, icaRmInd] = deal([]);
                     end
-                    save('-mat', g.session.fileNameAsr, 'stateAsr', 'dynRange', 'dataAccuOriSave', 'dataAccuFiltSave', 'chunkMarkerSave', 'chunkPowerSave', 'chunkFeedbackSave', 'chunkDynRangeSave', 'chunkThresholdSave', 'icaWeights', 'icaWinv', 'icaRmInd', 'g');
+                    save('-mat', g.session.fileNameAsr, 'stateAsr', 'dynRange', 'dataAccuOriSave', 'dataAccuFiltSave', 'chunkMarkerSave', 'chunkPowerSave', 'chunkFeedbackSave', 'chunkDynRangeSave', 'chunkThresholdSave', 'icaWeights', 'icaWinv', 'icaRmInd', 'badChans', 'g');
                     fprintf('Saving Baseline file %s\n', g.session.fileNameAsr);
                 else
                     % close text file
@@ -413,7 +410,6 @@ while 1
                 
         %% create a new inlet
         tic;
-        state = [];
         EEG = eeg_emptyset;
         EEG.nbchan = length(g.input.chans);
         EEG.srate  = g.input.srate;
@@ -492,9 +488,20 @@ while 1
                 chunkFilt = chunk;
             end
             
-            % apply ASR on chunk
+            % interpolate channels
+            if g.preproc.badchanFlag && ~strcmpi(g.session.runmode, 'baseline')
+                chunkFilt(nonEventChans,:) = nfblab_interp(chunkFilt(nonEventChans,:), g.input.chanlocs, g.preproc.badChans);
+            end
+            
+            % rereference
+            %EEG.data = bsxfun(@minus, EEG.data,mean(EEG.data([24 61],:))); % P9 and P10
+            if g.preproc.averefFlag || g.measure.loretaFlag
+                chunkFilt(nonEventChans,:) = bsxfun(@minus, chunkFilt(nonEventChans,:), mean(chunkFilt(nonEventChans,:))); % average reference
+            end
+                
+           % apply ASR on chunk
             if g.preproc.asrFlag && ~strcmpi(g.session.runmode, 'baseline')
-                [chunkFilt(nonEventChans,:), stateAsr]= asr_process(chunkFilt(nonEventChans,:), g.input.srateHardware, stateAsr);
+                [chunkFilt(nonEventChans,:), stateAsr]= asr_process(chunkFilt(nonEventChans,:), g.input.srateHardware, stateAsr, [],[],[],[],64);
             end
             
             % apply ICA
@@ -554,13 +561,7 @@ while 1
                 [evt,epochFeedback] = nfblab_epochprocess(EEG, evt); % param 3, true or false for verbose
                 if exist('results') && isfield(results, 'epochFeedback'), results = rmfield(results, 'epochFeedback'); end
                 if ~isempty(epochFeedback), results.epochFeedback = epochFeedback; end
-                
-                % rereference
-                %EEG.data = bsxfun(@minus, EEG.data,mean(EEG.data([24 61],:))); % P9 and P10
-                if g.preproc.averefFlag || g.measure.loretaFlag
-                    EEG.data = bsxfun(@minus, EEG.data, mean(EEG.data)); % average reference
-                end
-                
+                 
                 % make compliant EEGLAB dataset
                 EEG.pnts = size(EEG.data,2);
                 EEG.nchan = size(EEG.data,1);
@@ -648,7 +649,6 @@ while 1
                 % Perform spectral decomposition - taper the data with hamming
                 dataSpec = fft(bsxfun(@times, spatiallyFilteredData', hamming(size(spatiallyFilteredData,2))), g.measure.nfft);
                 freqs  = linspace(0, EEG.srate/2, floor(g.measure.nfft/2)+1);
-                freqs  = freqs(2:end); % remove DC (match the output of PSD)
                 
                 % select frequency bands
                 dataSpecSelect = zeros(size(spatiallyFilteredData,1), length(g.measure.freqrange));
@@ -656,7 +656,7 @@ while 1
                     freqRangeTmp = intersect( find(freqs >= g.measure.freqrange{iSpec}(1)), find(freqs <= g.measure.freqrange{iSpec}(2)) );
                     dataSpecSelect(:,iSpec) = mean(abs(dataSpec(freqRangeTmp,:)).^2,1); % mean power in frequency range
                     if g.measure.freqdb
-                        dataSpecSelect(:,iSpec) = 10*log10(abs(dataSpecSelect(:,iSpec)).^2);
+                        dataSpecSelect(:,iSpec) = 10*log10(dataSpecSelect(:,iSpec)); % Warning: log done after averaging power in freq range
                     end
                 end
                 

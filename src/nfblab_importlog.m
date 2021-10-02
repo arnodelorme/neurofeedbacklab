@@ -13,7 +13,7 @@ while ~feof(fid)
     
     begBracket = find(rawLine == '{');
     endBracket = find(rawLine == '}');
-    if ~isempty(begBracket) && ~isempty(endBracket) && begBracket+2 < endBracket
+    if length(begBracket) == 1 && ~isempty(begBracket) && ~isempty(endBracket) && begBracket+2 < endBracket
         jsonStr = jsondecode(rawLine(begBracket:endBracket));
         if isempty(logData)
             logData = jsonStr;
