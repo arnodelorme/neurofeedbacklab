@@ -5,8 +5,9 @@
 %
 % See also optional arguments
 
-function subjectData = nfblab_batchonefile(fileNames, fileOut, varargin)
+function [subjectData,spectrum] = nfblab_batchonefile(fileNames, fileOut, varargin)
 
+spectrum = [];
 if iscell(fileNames) && length(fileNames) == 1
     fileNames = fileNames{1};
 end
@@ -30,7 +31,7 @@ end
     'agefile'   '' {} '';
     'forceread' 'string' { 'on' 'off' 'log' } 'off';
     'deletelog' 'string' { 'on' 'off' } 'on';
-    'customimporfunc' 'string' {} '';
+    'customimportfunc' 'string' {} '';
     'fileNameAsr' 'string' {} fullfile(filePath, [ fileBase '_asr.mat' ]); ...
     'fileNameRaw' 'string' {} fullfile(filePath, [ fileBase '_nfblab.mat' ]); ...
     'fileNameOut' 'string' {} fullfile(filePath, [ fileBase '_out.mat' ]) }, 'nfblab_batchonefile', 'ignore');
@@ -79,7 +80,7 @@ for iFile = 1:length(allFiles)
         
         statFile = fullfile(allFiles(iFile).folder, [ allFiles(iFile).name(1:end-8) '_stat.mat' ]);
         
-        if ~exist(statFile, 'file')
+        if ~exist(statFile, 'file') || ~strcmpi(g.forceread, 'off')
 
             % process file
             % ------------
@@ -109,17 +110,25 @@ for iFile = 1:length(allFiles)
 
                 if ~isempty(EEG.data)
                     % recompute file
-                    if ~exist(fileNameLog, 'file') delete(fileNameLog); end
-
                     options = { 'streamFile' EEG, ...
                         'fileNameAsr', g.fileNameAsr, ...
                         'fileNameRaw', g.fileNameRaw, ...
                         'fileNameOut', g.fileNameOut, otheropts{:} };
 
                     % baseline for ASR
-                    nfblab_process('runmode', 'baseline', 'freqprocess', [], 'loretaFlag', false, options{:}); % process once to get ASR and ICA weights
-
+                    gtmp = struct(options{:});
+                    if (isfield(gtmp, 'asrFlag') && gtmp(1).asrFlag == 1) || ...
+                            (isfield(gtmp, 'icaFlag') && gtmp(1).icaFlag == 1) || ...
+                            (isfield(gtmp, 'badchanFlag') && gtmp(1).badchanFlag == 1)
+                        tmpOptions = options;
+                        for iOpt = 1:2:length(options)
+                            if strcmpi(options{iOpt}, 'freqprocess') tmpOptions{iOpt+1} = []; end
+                        end
+                        nfblab_process('runmode', 'baseline', 'loretaFlag', false, tmpOptions{:}); % process once to get ASR and ICA weights
+                    end
+                    
                     % actual processings
+                    if exist(fileNameLog, 'file') delete(fileNameLog); end
                     diary(fileNameLog);
                     nfblab_process('runmode', 'trial', options{:});
                     diary('off');
@@ -133,6 +142,10 @@ for iFile = 1:length(allFiles)
                 % -----------
                 fprintf('Reading log file %s ...\n', fileNameLog);
                 res = nfblab_importlog(fileNameLog);  % get back JSON array
+                if isfield(res, 'threshold'),   res = rmfield(res, 'threshold'); end
+                if isfield(res, 'value'),       res = rmfield(res, 'value'); end
+                if isfield(res, 'statechange'), res = rmfield(res, 'statechange'); end
+                if isfield(res, 'feedback'),    res = rmfield(res, 'feedback'); end
                 if strcmpi(g.deletelog, 'on'), delete(fileNameLog); end
                 %delete(fileName); % clean up
                 resFieldNames = fieldnames(res);
@@ -193,6 +206,14 @@ if ~isempty(subjectAge)
     for iData = 1:length(subjectData)
         subjectData(iData).age = subjectAge;
     end
+end
+
+% check to output spectrum if relevant
+if isfield(subjectData(1).measures, 'f1') && length(subjectData) == 1
+    m = subjectData(1).measures;
+    spectrum = [ m.f1.mean m.f2.mean m.f3.mean m.f4.mean m.f5.mean m.f6.mean m.f7.mean m.f8.mean m.f9.mean m.f10.mean ...
+        m.f11.mean m.f12.mean m.f13.mean m.f14.mean m.f15.mean m.f16.mean m.f17.mean m.f18.mean m.f19.mean m.f20.mean ...
+        m.f21.mean m.f22.mean m.f23.mean m.f24.mean m.f25.mean m.f26.mean m.f27.mean m.f28.mean m.f29.mean m.f30.mean ];
 end
 
 % write output JSON file

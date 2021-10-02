@@ -92,20 +92,12 @@ if ~isempty(g.measure.loreta_file) && exist(g.measure.loreta_file)
     ROI_list = union(ROI_list, ROI_list_add);
     
 end
-    
-% check if one need to extract events and if the windows are large enough
-% g.measure.evt does not change but evt does
-[evt,nonEventChans] = nfblab_epochcheck(g.measure.evt, g.input.chans, g.input.windowSize, g.input.windowInc, g.input.srateHardware, g.input.srate);
-
-% make sure the function can be run again
-onCleanup(@() nfblab_cleanup);
-chunkPerSec   = ceil(g.input.srate/g.input.windowInc);
 
 % streaming file
 if ~isempty(g.input.streamFile)
     [streamFileData, g.input.chanlocs] = nfblab_loadfile(g.input.streamFile);
     if streamFileData.srate ~= g.input.srate
-        fprintf(2, 'Warning: Stream file sampling rate different from streaming rate ********* ');
+        error('Warning: Stream file sampling rate different from streaming rate ********* ');
     end
     disp('Warning: Processing data file, overwritting session duration');
     g.session.baselineSessionDuration = ceil(size(streamFileData.data,2)/32);
@@ -114,6 +106,14 @@ if ~isempty(g.input.streamFile)
         g.input.chans = 1:streamFileData.nbchan;
     end
 end
+    
+% check if one need to extract events and if the windows are large enough
+% g.measure.evt does not change but evt does
+[evt,nonEventChans] = nfblab_epochcheck(g.measure.evt, g.input.chans, g.input.windowSize, g.input.windowInc, g.input.srateHardware, g.input.srate);
+
+% make sure the function can be run again
+onCleanup(@() nfblab_cleanup);
+chunkPerSec   = ceil(g.input.srate/g.input.windowInc);
 
 if ~strcmpi(g.session.runmode, 'trial') && ~strcmpi(g.session.runmode, 'baseline') && ~strcmpi(g.session.runmode, 'slave')
     error('Wrong run type')
@@ -674,6 +674,11 @@ while 1
                 if ~isempty(g.feedback.feedbackfield)
                     X = results.(g.feedback.feedbackfield);
                 else
+                    X = Inf;
+                end
+                if length(X) > 1
+                    fprintf(2, 'Cannot process feedback field because its length is more than 1\n');
+                    g.feedback.feedbackfield = [];
                     X = Inf;
                 end
                 

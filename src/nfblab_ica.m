@@ -14,7 +14,7 @@ if nargin < 4
 end
 
 %[EEG.icaweights,EEG.icasphere] = beamica( EEG.data );
-EEG = pop_runica(EEG, 'picard', 'pca', nICA);
+EEG = pop_runica(EEG, 'picard', 'pca', nICA, 'maxiter', 500);
 % EEG.icasphere = eye(EEG.nbchan);
 % [~, EEG.icaweights] = picard( EEG.data );
 % EEG = eeg_checkset(EEG);

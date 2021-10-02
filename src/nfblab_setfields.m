@@ -107,6 +107,10 @@ end
 
 % dynamical default
 % -----------------
+if ~isempty(g.input.streamFile) && isstruct(g.input.streamFile) && isfield(g.input.streamFile, 'srate')
+    fprintf(2, 'Overwriting sampling rate with the sampling rate of the file\n');
+    g.input.srate = g.input.streamFile.srate;
+end
 if isempty(g.measure.nfft)        g.measure.nfft = g.input.srate; end
 if isempty(g.input.windowSize)    g.input.windowSize = g.input.srate; end
 if isempty(g.input.srateHardware) g.input.srateHardware = g.input.srate; end
@@ -124,7 +128,7 @@ if isempty(g.session.fileNameAsr),        g.session.fileNameAsr        = sprintf
 if isempty(g.session.fileNameOut),        g.session.fileNameOut        = sprintf('data_nfblab_%s.mat', datestr(now, 'yyyy-mm-dd_HH-MM')); end
 if isempty(g.session.fileNameAsrDefault), g.session.fileNameAsrDefault = sprintf('asr_filter_%s.mat',  datestr(now, 'yyyy-mm-dd_HH-MM')); end
 if isempty(g.input.chanmask), g.input.chanmask = 1; end
-if isempty(g.feedback.feedbackfield), tmpFields = fieldnames(g.measure.freqprocess); g.feedback.feedbackfield = tmpFields{end}; end
+if ~isempty(g.measure.freqprocess) && isempty(g.feedback.feedbackfield), tmpFields = fieldnames(g.measure.freqprocess); g.feedback.feedbackfield = tmpFields{end}; end
 
 % load normalization file
 if ischar(g.measure.normfile) && ~isempty(g.measure.normfile)
@@ -134,15 +138,6 @@ if ischar(g.measure.normfile) && ~isempty(g.measure.normfile)
         g.measure.normfile = g.measure.normfile.(fields{1});
     end
 end
-
-% temp
-% g.measure.freqrange      = {};
-% g.measure.freqprocess    = [];
-% g.measure.connectprocess = [];
-% for iFreq = 1:30
-%     g.measure.freqrange{iFreq} = [iFreq-0.5 iFreq+0.49999999];
-%     g.measure.freqprocess.(sprintf('f%d', iFreq)) = eval(sprintf('@(x)x(:,%d);', iFreq));
-% end
 
 % check field compatibility
 if ~g.session.TCPIP && strcmpi(g.session.runmode, 'slave')
