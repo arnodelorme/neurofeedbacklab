@@ -1,32 +1,28 @@
 # Install
 
-1. Install LSL driver for your headset. This will depend on your hardware. Sometimes the manufacturer will provide you with a program. Sometimes you have to check out the code base and recompile from https://github.com/sccn/labstreaminglayer/tree/master/Apps. Sometimes the compiled code for these apps is available as a release on the corresponding GitHub repository. Alternatively some binaries are available for some apps from ftp://sccn.ucsd.edu/pub/software/LSL/. Then check you can connect to the stream with LabRecorder (see troubleshooting section below).
+1. Clone this repository (or download the zip code)
 
-2. Clone EEGLAB with submodules from https://github.com/sccn/eeglab
+1. Install LSL driver for your headset. This will depend on your hardware. Sometimes the manufacturer will provide you with a program. Sometimes you have to check out the code base and recompile from https://github.com/sccn/labstreaminglayer/tree/master/Apps. Then check you can connect to the stream with LabRecorder (see troubleshooting section below). 
 
-3. In clean_rawdata plugins folder of EEGLAB, copy private folder content to clean_rawdata folder. Otherwise neurofeedbacklab which needs these low level functions cannot access them.
+2. Then install the LSL Matlab interface librairy using released code from https://github.com/labstreaminglayer/liblsl-Matlab/releases (install the zip release which contains binary for your Platform). Unzip in the **src** folder of the current repository. Make sure the folder is named **liblsl-Matlab** or Neurofeedbacklab will not be able to find it (the path is defined at the end of the nfblab_setfields.m function).
 
-4. Clone BCILAB from https://github.com/sccn/BCILAB (devel branch which is the default one) at the same level as neurofeedbacklab. This is important because neurofeedbacklab will search the BCILAB paths and not be able to find them if it cloned at a random location. It is also possible to start BCILAB ("bcilab" command in Matlab) to add the paths or BCILAB but a large number of paths will be added which can interfere with the compilation process (if you want to compile Neurofeedbacklab instead of running it from Matlab).
- 
+2. Clone EEGLAB with submodules from https://github.com/sccn/eeglab or installed released version from zip
+
+3. Make sure you have the latest version (2.5 or later) of the *clean_rawdata* plugin (use the EEGLAB plugin manager -- menu item *File > Manage extensions*)
+
+4. Install the *Picard* plugin using the EEGLAB plugin manager if you want to perform real time independent component rejections
+
+5. Install the *ROIconnect* plugin (beta) from https://github.com/arnodelorme/roiconnect if you want to do real time eLoreta and connectivity analysis.
+
 5. Start Matlab
 
 6. Stats EEGLAB by going to the EEGLAB folder and typing "eeglab"
 
-7. Start nfblab_process works on your platform especially the LSL link with your EEG headset by typing nfblab_process. If everything goes well, after you select to record a baseline, the program should show you some numerical outputs. If it returns an error, it means that it could connect to your headset (see troubleshoothing below).
-                           
-# Make sure Matlab can connect to LSL
-After running the function "nfblab_options" which will add the paths to LSL, use the following code snippet to check if you can stream data on Matlab
+7. Use *nfblab_check_computation.m* to check Neurofeedbacklab real time computation against a standard EEGLAB pipeline.
 
-```Matlab
-lib = lsl_loadlib();
-result = nfblab_findlslstream(lib,'','EEG-name-of-your-lsl-stream')
-inlet = lsl_inlet(result{1});
-pause(1);
-[chunk,stamps] = inlet.pull_chunk();
-pause(1);
-[chunk,stamps] = inlet.pull_chunk();
-figure; plot(chunk');
-```
+8. Adapt *nfblab_muse.m* for your headset
+
+9. Type *nfblab_process('help', true)* to see Neurofeedbacklab parameters.
 
 # Make sure you have the right LSL stream
 
@@ -38,29 +34,15 @@ To identify the name of the LSL stream for your EEG headset using the LabRecorde
 
 Note that LSL libraries Neurofeedbacklab uses are from BCILAB which are themselves compiled from the Lab Streaming Layer repository https://github.com/sccn/labstreaminglayer (and BCILAB versions might have been compiled with earlier vesions of the LSL code). If you encounter problem with connecting Matlab and LSL, you could try the following.
 
-## Downloading and recompiling LSL itself
+# Connecting to a headset (Mac, PC or Ubuntu)
 
-These libraries are common to all LSL binary program (including the driver you are using to connect to your headset). They are not specific to Matlab. Official LSL library repo is https://github.com/sccn/liblsl. Once recompiled, the easiest is to replace the binaries in BCILAB if you have already installed it (above) in the path "BCILAB/dependencies/liblsl-Matlab/bin" (using this method the Matlab interface to LSL will easily find the recompiled library).
-
-## Recompiling the Matlab interface to LSL
-
-When running LSL from Matlab, we use wrapper functions to the library above. These might need to be recompiled as well.
-
-1. Checkout the the Matlab interface for the LSL library https://github.com/labstreaminglayer/liblsl-Matlab. This folder is the same as the source code used to compile the LSL binaries in BCILAB but it is more up to date.
-
-2. Compile the mex files using the build command under Matlab. A new folder will be created for your platform.
-
-3. Add the new path (on a brand new Matlab session without any of the previous Matlab paths added) and test the go to the section "Troubleshooting Matlab LSL interface" above to see if you can now connect to LSL streams using Matlab.
-
-# Connecting a Muse headset (Mac, PC or Ubuntu)
-
-1. Power on your Muse. This assumes you have a Muse 1 (not Muse 2). Use the muse-io command line interface to stream data to lsl (available at https://sites.google.com/a/interaxon.ca/muse-developer-site/download). The command is as follow (with XXXX being the name of your Muse as visible on the Bluetooth preference). For some early Muse 1 you first need to pair by hand using the Bluetooth Mac menu. For late Muse 1 headsets you do not need to. We tried this under Windows, Mac and Ubuntu.
+1. This example is using the Muse headset, but the process is similar for other headsets. Power on your Muse. This assumes you have a Muse 1 (not Muse 2). Use the muse-io command line interface to stream data to lsl (available at https://sites.google.com/a/interaxon.ca/muse-developer-site/download). The command is as follow (with XXXX being the name of your Muse as visible on the Bluetooth preference). For some early Muse 1 you first need to pair by hand using the Bluetooth Mac menu. For late Muse 1 headsets you do not need to. We tried this under Windows, Mac and Ubuntu.
 
 muse-io --device Muse-XXXX --lsl-eeg EEG
 
-2. Use LabRecorder to check that you can see the EEG stream (https://github.com/labstreaminglayer/App-LabRecorder) and stream from it. This app is very stable as mentioned earlier.
+2. Use LabRecorder to check that you can see the EEG stream (https://github.com/labstreaminglayer/App-LabRecorder) and stream from it. This app is very stable as mentioned earlier. This will allow you to make sure the LSL steam is visible and functional.
 
-3. Start Matlab and run "nfblab_options" to add the LSL paths. Now try to connect using Matlab. Type the commands
+3. Start Matlab and run *nfblab_process('help', true)* to add the LSL paths. Now try to connect using Matlab. Note that the code below will work for any headset and is not limited to the Muse. Type the commands
 
 ```Matlab
 lib = lsl_loadlib();
