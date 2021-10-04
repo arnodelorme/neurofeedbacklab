@@ -39,6 +39,11 @@ if ~exist(fileNameSpec, 'file') || strcmpi(g.recompute, 'on')
         %% Preprocessing
         % remove channels with no coordinates
         EEG = pop_select( EEG,'nochannel', find(cellfun(@isempty, { EEG(1).chanlocs.X })) );
+        if isempty(EEG.data)
+            eegMeasure = [];
+            spectrum = [];
+            return;
+        end
         
         % do not reference before bad channel rejection
         
