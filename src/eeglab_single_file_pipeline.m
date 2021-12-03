@@ -11,7 +11,7 @@ g = finputcheck( varargin, ...
     'recompute' 'string' { 'on' 'off' }  'off';
     'spectrum'  'string' { 'spectopo' 'fft' 'fftlog' 'welch' }  'spectopo';
     'ica'       'string' { 'on' 'off' }  'on' });
-if isstr(g)
+if ischar(g)
     error(g);
 end
 
@@ -23,12 +23,26 @@ if ~exist(fileNameSpec, 'file') || strcmpi(g.recompute, 'on')
         else
             EEG = pop_biosig( fileName );
         end
+        if contains(EEG.chanlocs(1).labels, 'EEG ')
+            for iChan = 1:length(EEG.chanlocs)
+                 EEG.chanlocs(iChan).labels = EEG.chanlocs(iChan).labels(5:end);
+            end
+        end
+        if contains(EEG.chanlocs(1).labels, '-LE')
+            for iChan = 1:length(EEG.chanlocs)
+                pos = find(EEG.chanlocs(iChan).labels == '-');
+                if ~isempty(pos)
+                    EEG.chanlocs(iChan).labels = EEG.chanlocs(iChan).labels(1:pos(1)-1);
+                end
+            end
+        end
         for iChan = 1:length(EEG.chanlocs)
             pos = find(EEG.chanlocs(iChan).labels == '-');
             if ~isempty(pos)
                 EEG.chanlocs(iChan).labels = EEG.chanlocs(iChan).labels(5:pos(1)-1);
             end
         end
+
         EEG = pop_chanedit(EEG, 'lookup','standard-10-5-cap385.elp');
         %EEG = pop_chanedit(EEG, 'lookup','standard_1005.elc');
         if EEG.nbchan == 20
@@ -102,7 +116,7 @@ if ~exist(fileNameSpec, 'file') || strcmpi(g.recompute, 'on')
             EEG = pop_subcomp(EEG, [], 0); % remove pre-flagged bad components
         end
         
-        EEG    = pop_saveset(EEG, fileNameOut);
+        try, EEG    = pop_saveset(EEG, fileNameOut); catch disp('Warning: Cannot save file'); end
     else
         EEG = pop_loadset( fileNameOut );
     end
@@ -133,7 +147,7 @@ if ~exist(fileNameSpec, 'file') || strcmpi(g.recompute, 'on')
     [~,minf] = min(abs(freqs-1));
     [~,maxf] = min(abs(freqs-30));
     spectrum = spectrum(:,minf:maxf);
-    save('-mat', fileNameSpec, 'spectrum')
+    try, save('-mat', fileNameSpec, 'spectrum'); catch disp('Warning: cannot save spectrum file'); end
 else
     spectrum = load('-mat', fileNameSpec);
     spectrum = spectrum.spectrum;
