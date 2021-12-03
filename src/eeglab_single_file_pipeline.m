@@ -45,12 +45,26 @@ if strcmpi(g.recompute, 'on') || ...
         else
             EEG = pop_biosig( fileName );
         end
+        if contains(EEG.chanlocs(1).labels, 'EEG ')
+            for iChan = 1:length(EEG.chanlocs)
+                 EEG.chanlocs(iChan).labels = EEG.chanlocs(iChan).labels(5:end);
+            end
+        end
+        if contains(EEG.chanlocs(1).labels, '-LE')
+            for iChan = 1:length(EEG.chanlocs)
+                pos = find(EEG.chanlocs(iChan).labels == '-');
+                if ~isempty(pos)
+                    EEG.chanlocs(iChan).labels = EEG.chanlocs(iChan).labels(1:pos(1)-1);
+                end
+            end
+        end
         for iChan = 1:length(EEG.chanlocs)
             pos = find(EEG.chanlocs(iChan).labels == '-');
             if ~isempty(pos)
                 EEG.chanlocs(iChan).labels = EEG.chanlocs(iChan).labels(5:pos(1)-1);
             end
         end
+
         EEG = pop_chanedit(EEG, 'lookup','standard-10-5-cap385.elp');
         %EEG = pop_chanedit(EEG, 'lookup','standard_1005.elc');
         if EEG.nbchan == 20
