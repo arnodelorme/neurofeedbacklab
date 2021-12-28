@@ -8,7 +8,7 @@ g = finputcheck( varargin, ...
     'cleanchan' 'string' { 'on' 'off' }  'on';
     'cleandata' 'string' { 'on' 'off' }  'on';
     'recompute' 'string' { 'on' 'off' }  'off';
-    'spectrum'  'string' { 'spectopo' 'fft' 'fftlog' 'welch' '' }  'spectopo';
+    'spectrum'  'string' { 'spectopo' 'fft' 'fftlog' 'welch' '' }  '';
     'connect'   'string' { 'CS' '' }  '';
     'ica'       'string' { 'on' 'off' }  'on' });
 if ischar(g)
@@ -27,7 +27,7 @@ end
 % load connectivity matrix
 fileNameConnect = [ fileName(1:end-3) '_' g.connect '.mat'];
 connect     = [];
-if ~isempty(g.spectrum) && exist(fileNameConnect, 'file')
+if ~isempty(g.connect) && exist(fileNameConnect, 'file')
     connect = load('-mat', fileNameConnect);
     connect = connect.connect;
 end
@@ -44,6 +44,7 @@ if strcmpi(g.recompute, 'on') || ...
             EEG = pop_loadset(fileName);
         else
             EEG = pop_biosig( fileName );
+            if EEG.pnts < 2000, eegMeasure = []; return; end
         end
         if contains(EEG.chanlocs(1).labels, 'EEG ')
             for iChan = 1:length(EEG.chanlocs)
@@ -150,14 +151,14 @@ if strcmpi(g.recompute, 'on') || ...
         elseif strcmpi(g.spectrum, 'welch')
             [spectrum,freqs] = pwelch(EEG.data',EEG.srate,EEG.srate/2,EEG.srate,EEG.srate); % Window, overlap, nfft, srate
             spectrum = 10*log10(spectrum');
-        elseif strcmpi(g.spectrum(1:3), 'fft')
+        elseif strcmpi(g.spectrum(1:3), 'fft') || strcmpi(g.spectrum, 'spec')
             nfft = EEG.srate;
-            EEG = eeg_regepochs(EEG, 'limits', [0 1], 'recurrence', 0.5);
-            data = permute(EEG.data, [2 1 3]);
+            EEGEpoch = eeg_regepochs(EEG, 'limits', [0 1], 'recurrence', 0.5);
+            data = permute(EEGEpoch.data, [2 1 3]);
             % data = data - repmat(mean(data,1), [size(data,1) 1 1]); % baseline removal
             dataSpec = fft(bsxfun(@times, data, hamming(size(data,1))), nfft);
-            freqs  = linspace(0, EEG.srate/2, floor(nfft/2)+1);
-            if strcmpi(g.spectrum, 'fftlog')
+            freqs  = linspace(0, EEGEpoch.srate/2, floor(nfft/2)+1);
+            if strcmpi(g.spectrum, 'fftlog') || strcmpi(g.spectrum, 'spec')
                 spectrum = mean(10*log10(abs(dataSpec).^2),3)';
             else
                 % standard pwelch
@@ -176,8 +177,9 @@ if strcmpi(g.recompute, 'on') || ...
 
     % Compute connectivity
     if strcmpi(g.connect, 'CS')
+        EEG = pop_select(EEG, 'time', [0 60*15]); % first 10 min only otherwise out of mem
         EEG = pop_resample(EEG, 100);
-        EEG = eeg_regepochs(EEG, 1, [0 2]);
+        EEG = eeg_regepochs(EEG, 2, [0 2]); % non overlapping otherwise uses too much RAM
         eeglabP = fileparts(which('eeglab'));
         EEG = pop_dipfit_settings( EEG, 'hdmfile', fullfile(eeglabP, 'plugins','dipfit','standard_BEM','standard_vol.mat'), ...
             'coordformat','MNI','mrifile', fullfile(eeglabP, 'plugins','dipfit','standard_BEM','standard_mri.mat'), ...
@@ -187,7 +189,7 @@ if strcmpi(g.recompute, 'on') || ...
         EEG = pop_roi_connect(EEG, 'morder',20,'naccu',[],'methods',{'CS'});
         PS = abs(imag(cs2coh(EEG.roi.CS)));
         PS = squeeze(mean(mean(reshape(PS, EEG.srate+1, 3, EEG.roi.nROI, 3, EEG.roi.nROI), 2), 4));
-        connect = mean(squeeze(mean(PS(frq_inds, :, :))), 2);
+        connect = PS(:, :, :);
         try, save('-mat', fileNameConnect, 'connect'); catch disp('Warning: cannot save connect file'); end
     elseif ~isempty(g.connect)
         error('Wrong connnectivity');
@@ -202,6 +204,6 @@ if ~isempty(g.spectrum)
 end
 
 if ~isempty(g.connect)
-    eegMeasure.measures.connect.mean = connect;
+    eegMeasure.measures.connect.mean = connect(1:30,:,:); % 30 first frequencies only (1 Hz res)
 end
 
