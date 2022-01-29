@@ -292,8 +292,8 @@ while 1
             g = nfblab_setfields(g, fieldJson{iField}, structResp.options.(fieldJson{iField}));
             
             % handle freqprocess parameter
-            if isfield(g, 'customfield') && ~isempty(findstr(fieldJson{iField}, g.customfield.str))
-                eval(g.customfield.func);
+            if ~isempty(g.custom) && ~isempty(findstr(fieldJson{iField}, g.custom.field))
+                eval(g.custom.func);
             end
             
             % handle freqprocess parameter
@@ -607,7 +607,7 @@ while 1
                         for iNet = 1:length(loreta_Networks)
                             
                             if 1
-                                restmp = roi_network( spatiallyFilteredData, loreta_Networks(iNet).ROI_inds, 'nfft', g.measure.nfft, 'postprocess', g.measure.connectprocess, 'freqranges', g.measure.freqrange);
+                                restmp = roi_network( spatiallyFilteredData, loreta_Networks(iNet).ROI_inds, 'srate', EEG.srate, 'window', EEG.srate, 'nfft', g.measure.nfft, 'postprocess', g.measure.connectprocess, 'freqranges', g.measure.freqrange);
                                 % copy results
                                 fields = fieldnames(restmp);
                                 for iField = 1:length(fields)
@@ -667,7 +667,7 @@ while 1
                 
                 % normalize all fields
                 if ~isempty(g.measure.normfile)
-                    results = nfblab_zscore(results, g.measure.normfile, agerange);
+                    results = nfblab_zscore(results, g.measure.normfile, g.measure.normagerange);
                 end
                 
                 % get feedback field
@@ -756,7 +756,11 @@ while 1
                         % fprintf('Spectral power %2.3f - output %1.0f - threshold %1.2f\n', X, feedbackVal, threshold);
                     end
                 end
-                chunkFeedback(chunkCount) = feedbackVal;
+                if isempty(feedbackVal)
+                    chunkFeedback(chunkCount) = NaN;
+                else
+                    chunkFeedback(chunkCount) = feedbackVal;
+                end
                 chunkCount = chunkCount+1;
                 
                 % output message through TCP/IP
