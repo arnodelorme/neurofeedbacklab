@@ -111,7 +111,6 @@ for iFile = 1:length(allFiles)
                 if ~isempty(EEG.data)
                     % recompute file
                     options = { 'streamFile' EEG, ...
-                        'fileNameAsr', g.fileNameAsr, ...
                         'fileNameRaw', g.fileNameRaw, ...
                         'fileNameOut', g.fileNameOut, otheropts{:} };
 
@@ -120,7 +119,7 @@ for iFile = 1:length(allFiles)
                     if (isfield(gtmp, 'asrFlag') && gtmp(1).asrFlag == 1) || ...
                             (isfield(gtmp, 'icaFlag') && gtmp(1).icaFlag == 1) || ...
                             (isfield(gtmp, 'badchanFlag') && gtmp(1).badchanFlag == 1)
-                        tmpOptions = options;
+                        tmpOptions = { options 'fileNameAsr' g.fileNameAsr };
                         for iOpt = 1:2:length(options)
                             if strcmpi(options{iOpt}, 'freqprocess') tmpOptions{iOpt+1} = []; end
                         end

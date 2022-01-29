@@ -32,7 +32,7 @@ allowedFields = {
     'preproc'   'badchanFlag'    false   'Bad channel detection and interpolation (true or false). Require baseline file.';
     'preproc'   'A'              []      '';
     'preproc'   'B'              []      '';
-    'preproc'   'asrFlag'        true    'Use Artifact Subspace Reconstruction using baseline calibration data  (true or false). Require baseline file.';
+    'preproc'   'asrFlag'        false   'Use Artifact Subspace Reconstruction using baseline calibration data  (true or false). Require baseline file.';
     'preproc'   'asrCutoff'      20      'ASR BurstCriterion cut off value';
     'preproc'   'icaFlag'        false   'ICA flag to run ICA and automatically reject components (true or false). Require baseline file.';
     'preproc'   'averefFlag'     false   'Compute average reference (true or false). Default is false but forced to true if eLoreta is used';
@@ -51,6 +51,7 @@ allowedFields = {
     'measure'   'evt'            ''        '';
     'measure'   'nfft'           []        'Length of FFT - allows FFT padding if necessary';
     'measure'   'connectprocess' []        'Structure with function in each field.';
+    'measure'   'preset'         'default' 'Preset type of feedback, ''default'' is theta, ''allfreqs'' is all frequencies for all channels';
     ...
     'feedback'  'feedbackMode'   'dynrange' '"dynrange" or "threshold" see help message';
     'feedback'  'threshold'      ''        'Threshold value at startup';
@@ -162,6 +163,19 @@ if isempty(g.session.runmode) && ~g.session.help
     elseif strcmpi(s, 'n'), g.session.runmode = 'trial';
     else error('Unknown option');
     end
+end
+
+if strcmpi(g.measure.preset, 'default')
+elseif strcmpi(g.measure.preset, 'allfreqs')
+    g.measure.freqrange      = {};
+    g.measure.freqprocess    = [];
+    for iFreq = 1:30
+        g.measure.freqrange{iFreq} = [iFreq-0.5 iFreq+0.49999999];
+        g.measure.freqprocess.(sprintf('f%d', iFreq)) = eval(sprintf('@(x)x(:,%d);', iFreq));
+    end
+    g.feedback.feedbackfield = '';
+else
+    error('Unknown preset computation');
 end
 
 % fir filter below (preserve phase but long delay)
