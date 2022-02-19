@@ -292,8 +292,8 @@ while 1
             g = nfblab_setfields(g, fieldJson{iField}, structResp.options.(fieldJson{iField}));
             
             % handle freqprocess parameter
-            if isfield(g, 'customfield') && ~isempty(findstr(fieldJson{iField}, g.customfield.str))
-                eval(g.customfield.func);
+            if ~isempty(g.custom) && ~isempty(findstr(fieldJson{iField}, g.custom.field))
+                eval(g.custom.func);
             end
             
             % handle freqprocess parameter
@@ -677,7 +677,7 @@ while 1
                 
                 % normalize all fields
                 if ~isempty(g.measure.normfile)
-                    results = nfblab_zscore(results, g.measure.normfile, agerange);
+                    results = nfblab_zscore(results, g.measure.normfile, g.measure.normagerange);
                 end
                 
                 % get feedback field
@@ -766,7 +766,11 @@ while 1
                         % fprintf('Spectral power %2.3f - output %1.0f - threshold %1.2f\n', X, feedbackVal, threshold);
                     end
                 end
-                chunkFeedback(chunkCount) = feedbackVal;
+                if isempty(feedbackVal)
+                    chunkFeedback(chunkCount) = NaN;
+                else
+                    chunkFeedback(chunkCount) = feedbackVal;
+                end
                 chunkCount = chunkCount+1;
                 
                 % output message through TCP/IP

@@ -45,9 +45,12 @@ allowedFields = {
     'measure'   'addfreqprocess' ''        '';
     'measure'   'loretaFlag'     false     '';
     'measure'   'loreta_file'    ''        '';
+    'measure'   'freqloreta'     []        '';
     'measure'   'normfile'       ''        '';
+    'measure'   'normagerange'   []        'Age range of the person being tested';
     'measure'   'evt'            ''        '';
     'measure'   'nfft'           []        'Length of FFT - allows FFT padding if necessary';
+    'measure'   'connectprocess' []        'Structure with function in each field.';
     'measure'   'preset'         'default' 'Preset type of feedback, ''default'' is theta, ''allfreqs'' is all frequencies for all channels';
     ...
     'feedback'  'feedbackMode'   'dynrange' '"dynrange" or "threshold" see help message';
@@ -63,7 +66,10 @@ allowedFields = {
     'feedback'  'capdBchange'    1000      'Maximum dB change from one block to the next. 1000 means disabled';
     'feedback'  'psychoToolbox'  false     '';
     'feedback'  'simplePlot'     false     'Simple feedback plot (true or false)';
-    'feedback'  'feedbackfield'  ''        'Field to use for feedback (TCP/IP)'
+    'feedback'  'feedbackfield'  ''        'Field to use for feedback (TCP/IP)';
+    ...
+    'custom'    'field'          ''        ''
+    'custom'    'func'         ''        ''
     };
 
 if ~isfield(g, 'session'),  g.session = []; end
@@ -71,6 +77,7 @@ if ~isfield(g, 'input'),    g.input = []; end
 if ~isfield(g, 'preproc'),  g.preproc = []; end
 if ~isfield(g, 'measure'),  g.measure = []; end
 if ~isfield(g, 'feedback'), g.feedback = []; end
+if ~isfield(g, 'custom'),   g.custom = []; end
 
 % check for missing fields
 for iField = 1:length(allowedFields)
@@ -227,7 +234,7 @@ for iField = 1:length(allowedFields)
             if ~isempty(curVal)
                 fprintf('    %-24s %s\n', allowedFields{iField,2}, 'File or data provided as input' );
             end
-        elseif strcmpi(allowedFields{iField,2}, 'freqprocess')
+        elseif strcmpi(allowedFields{iField,2}, 'freqprocess') || strcmpi(allowedFields{iField,2}, 'connectprocess') || strcmpi(allowedFields{iField,2}, 'freqloreta')
             if ~isempty(curVal)
                 fprintf('    %-24s %d functions to compute on frequencies provided\n', allowedFields{iField,2}, length(fieldnames(curVal)) );
             end
