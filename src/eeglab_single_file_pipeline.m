@@ -42,6 +42,8 @@ if strcmpi(g.recompute, 'on') || ...
         [~,~,ext] = fileparts(fileName);
         if strcmpi(ext, '.set')
             EEG = pop_loadset(fileName);
+        elseif strcmpi(ext, '.csv')
+            EEG = ntl_importbraindxlocal(fileName);
         else
             EEG = pop_biosig( fileName );
             if EEG.pnts < 2000, eegMeasure = []; return; end
@@ -206,4 +208,24 @@ end
 if ~isempty(g.connect)
     eegMeasure.measures.connect.mean = connect(1:30,:,:); % 30 first frequencies only (1 Hz res)
 end
+
+function [EEG, flag] = ntl_importbraindxlocal(file)
+
+EEG = [];
+flag = true;
+data = importdata(file); % CSV file
+if isstruct(data) % not the right type of CSV file
+    flag = false;
+    return
+end
+EEG = eeg_emptyset;
+EEG.data = data';
+EEG.nbchan = size(EEG.data ,1);
+EEG.pnts = size(EEG.data ,2);
+EEG.trials = 1;
+EEG.srate = 100;
+EEG.xmin = 0;
+EEG.xmax = (EEG.pnts-1)/EEG.srate;
+EEG.chanlocs = struct('labels',{ 'F1','F2','F3','F4','C3','C4','P3','P4','O1','O2','F7','F8','T3','T4','T5','T6','Fz','Cz','Pz' });
+EEG = eeg_checkset(EEG);
 

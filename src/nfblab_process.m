@@ -566,77 +566,87 @@ while 1
                 EEG.pnts = size(EEG.data,2);
                 EEG.nchan = size(EEG.data,1);
                 EEG.xmax = EEG.pnts/EEG.srate;
-                if g.measure.loretaFlag              
-                    % project to source space
-                    source_voxel_data = reshape(EEG.data(:, :)'*loreta_P(:, :), size(EEG.data,2), size(loreta_P,2), 3);
+                if g.measure.loretaFlag
                     
-                    % Computing spectrum
-                    sz = size(source_voxel_data);
-                    tmpdata = reshape(source_voxel_data, sz(1), sz(2)*sz(3));
-                    source_voxel_spec = pwelch(tmpdata, EEG.srate, EEG.srate/2, EEG.srate); % assuming 1 second of data
-                    source_voxel_spec = reshape(source_voxel_spec, size(source_voxel_spec,1), sz(2), sz(3));
-                    source_voxel_spec = mean(source_voxel_spec(2:size(source_voxel_spec,1),:,:),3); % frequency selection 2 to 31 (1Hz to 30Hz)
-                    freqs  = linspace(0, EEG.srate/2, floor(g.measure.nfft/2)+1);
-                    freqs  = freqs(2:end); % remove DC (match the output of PSD)
+                    if 1
+                        opt.loreta_P = loreta_P;
+                        opt.loreta_Networks = loreta_Networks;
+                        opt.loreta_ROIS     =loreta_ROIS;
+                        results = nfblab_connect(EEG, 'nfblabloreta', opt, 'nfft', g.measure.nfft, 'freqrange', g.measure.freqrange, 'freqdb', g.measure.freqdb, ...
+                                    'processfreq', g.measure.freqloreta, 'processconnect', g.measure.connectproces, 'roilist', ROI_list);
+                    else
                     
-                    % Compute ROI activity
-                    for ind_roi = ROI_list
-                        % data used for connectivity analysis
-                        spatiallyFilteredData(ind_roi,:) = roi_getact( source_voxel_data, loreta_ROIS(ind_roi).Vertices, 1, 0); % Warning no zscore here; also PCA=1 is too low
-                        spatiallyFilteredSpec(ind_roi,:) = roi_getact( source_voxel_spec, loreta_ROIS(ind_roi).Vertices, 1, 0);
-                    end
-                    loretaSpec = spatiallyFilteredSpec';
-                    
-                    % select frequency bands
-                    for iSpec = 1:length(g.measure.freqrange)
-                        freqRangeTmp = intersect( find(freqs >= g.measure.freqrange{iSpec}(1)), find(freqs <= g.measure.freqrange{iSpec}(2)) );
-                        loretaSpecSelect(:,iSpec) = mean(abs(loretaSpec(freqRangeTmp,:)).^2,1); % mean power in frequency range
-                        if g.measure.freqdb
-                            loretaSpecSelect(:,iSpec) = 10*log10(abs(loretaSpecSelect(:,iSpec)).^2);
-                        end
-                    end
-                    
-                    % compute metric of interest
-                    for iProcess = 1:length(freqloretaFields)
-                        results.(freqloretaFields{iProcess}) = feval(g.measure.freqloreta.(freqloretaFields{iProcess}), loretaSpecSelect);
-                    end
+                        % project to source space
+                        source_voxel_data = reshape(EEG.data(:, :)'*loreta_P(:, :), size(EEG.data,2), size(loreta_P,2), 3);
 
-                    % compute cross-spectral density for each network
-                    % -----------------------------------------------
-                    if ~isempty(g.measure.connectprocess)
-                        for iNet = 1:length(loreta_Networks)
-                            
-                            if 1
-                                restmp = roi_network( spatiallyFilteredData, loreta_Networks(iNet).ROI_inds, 'nfft', g.measure.nfft, 'postprocess', g.measure.connectprocess, 'freqranges', g.measure.freqrange);
-                                % copy results
-                                fields = fieldnames(restmp);
-                                for iField = 1:length(fields)
-                                    results.([ loreta_Networks(iNet).name '_' fields{iField} ]) = restmp.(fields{iField});
-                                end
-                            else
-                                networkData = spatiallyFilteredData(loreta_Networks(iNet).ROI_inds,:);
-                                S = cpsd_welch(networkData,size(networkData,2),0,g.measure.nfft);
-                                [nchan, nchan, nfreq] = size(S);
-                                
-                                % imaginary part of cross-spectral density
-                                % ----------------------------------------
-                                absiCOH = S;
-                                for ifreq = 1:nfreq
-                                    absiCOH(:, :, ifreq) = squeeze(S(:, :, ifreq)) ./ sqrt(diag(squeeze(S(:, :, ifreq)))*diag(squeeze(S(:, :, ifreq)))');
-                                end
-                                absiCOH = abs(imag(absiCOH));
-                                
-                                % frequency selection
-                                % -------------------
-                                connectSpecSelect = zeros(size(absiCOH,1), size(absiCOH,2), length(g.measure.freqrange));
-                                for iSpec = 1:length(g.measure.freqrange)
-                                    freqRangeTmp = intersect( find(freqs >= g.measure.freqrange{iSpec}(1)), find(freqs <= g.measure.freqrange{iSpec}(2)) );
-                                    connectSpecSelect(:,:,iSpec) = mean(absiCOH(:,:,freqRangeTmp),3); % mean power in frequency range
-                                end
-                                
-                                connectprocessFields = fieldnames(g.measure.connectprocess);
-                                for iProcess = 1:length(connectprocessFields)
-                                    results.([ loreta_Networks(iNet).name '_' connectprocessFields{iProcess} ]) = feval(g.measure.connectprocess.(connectprocessFields{iProcess}), connectSpecSelect);
+                        % Computing spectrum
+                        sz = size(source_voxel_data);
+                        tmpdata = reshape(source_voxel_data, sz(1), sz(2)*sz(3));
+                        source_voxel_spec = pwelch(tmpdata, EEG.srate, EEG.srate/2, EEG.srate); % assuming 1 second of data
+                        source_voxel_spec = reshape(source_voxel_spec, size(source_voxel_spec,1), sz(2), sz(3));
+                        source_voxel_spec = mean(source_voxel_spec(2:size(source_voxel_spec,1),:,:),3); % frequency selection 2 to 31 (1Hz to 30Hz)
+                        freqs  = linspace(0, EEG.srate/2, floor(g.measure.nfft/2)+1);
+                        freqs  = freqs(2:end); % remove DC (match the output of PSD)
+
+                        % Compute ROI activity
+                        for ind_roi = ROI_list
+                            % data used for connectivity analysis
+                            spatiallyFilteredData(ind_roi,:) = roi_getact( source_voxel_data, loreta_ROIS(ind_roi).Vertices, 1, 0); % Warning no zscore here; also PCA=1 is too low
+                            spatiallyFilteredSpec(ind_roi,:) = roi_getact( source_voxel_spec, loreta_ROIS(ind_roi).Vertices, 1, 0);
+                        end
+                        loretaSpec = spatiallyFilteredSpec';
+
+                        % select frequency bands
+                        for iSpec = 1:length(g.measure.freqrange)
+                            freqRangeTmp = intersect( find(freqs >= g.measure.freqrange{iSpec}(1)), find(freqs <= g.measure.freqrange{iSpec}(2)) );
+                            loretaSpecSelect(:,iSpec) = mean(abs(loretaSpec(freqRangeTmp,:)).^2,1); % mean power in frequency range
+                            if g.measure.freqdb
+                                loretaSpecSelect(:,iSpec) = 10*log10(abs(loretaSpecSelect(:,iSpec)).^2);
+                            end
+                        end
+
+                        % compute metric of interest
+                        for iProcess = 1:length(freqloretaFields)
+                            results.(freqloretaFields{iProcess}) = feval(g.measure.freqloreta.(freqloretaFields{iProcess}), loretaSpecSelect);
+                        end
+
+                        % compute cross-spectral density for each network
+                        % -----------------------------------------------
+                        if ~isempty(g.measure.connectprocess)
+                            for iNet = 1:length(loreta_Networks)
+
+                                if 1
+                                    restmp = roi_network( spatiallyFilteredData, loreta_Networks(iNet).ROI_inds, 'nfft', g.measure.nfft, 'postprocess', g.measure.connectprocess, 'freqranges', g.measure.freqrange);
+                                    % copy results
+                                    fields = fieldnames(restmp);
+                                    for iField = 1:length(fields)
+                                        results.([ loreta_Networks(iNet).name '_' fields{iField} ]) = restmp.(fields{iField});
+                                    end
+                                else
+                                    networkData = spatiallyFilteredData(loreta_Networks(iNet).ROI_inds,:);
+                                    S = cpsd_welch(networkData,size(networkData,2),0,g.measure.nfft);
+                                    [nchan, nchan, nfreq] = size(S);
+
+                                    % imaginary part of cross-spectral density
+                                    % ----------------------------------------
+                                    absiCOH = S;
+                                    for ifreq = 1:nfreq
+                                        absiCOH(:, :, ifreq) = squeeze(S(:, :, ifreq)) ./ sqrt(diag(squeeze(S(:, :, ifreq)))*diag(squeeze(S(:, :, ifreq)))');
+                                    end
+                                    absiCOH = abs(imag(absiCOH));
+
+                                    % frequency selection
+                                    % -------------------
+                                    connectSpecSelect = zeros(size(absiCOH,1), size(absiCOH,2), length(g.measure.freqrange));
+                                    for iSpec = 1:length(g.measure.freqrange)
+                                        freqRangeTmp = intersect( find(freqs >= g.measure.freqrange{iSpec}(1)), find(freqs <= g.measure.freqrange{iSpec}(2)) );
+                                        connectSpecSelect(:,:,iSpec) = mean(absiCOH(:,:,freqRangeTmp),3); % mean power in frequency range
+                                    end
+
+                                    connectprocessFields = fieldnames(g.measure.connectprocess);
+                                    for iProcess = 1:length(connectprocessFields)
+                                        results.([ loreta_Networks(iNet).name '_' connectprocessFields{iProcess} ]) = feval(g.measure.connectprocess.(connectprocessFields{iProcess}), connectSpecSelect);
+                                    end
                                 end
                             end
                         end
