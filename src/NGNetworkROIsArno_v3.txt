@@ -1,0 +1,11 @@
+Cingulo_opercular_network	DNM	Salience_network	Executive_network	Working_memory_network	Dorsal_attention_network
+Insular_cortex	Post_cingulate_cortex	Insular_cortex	Dorso_lateral_prefrontal_cortex	Frontal_midline_cortex	Visual_cortex
+Frontal_operculum	Augular_gyrus	Dorsal_anterior_cingulate_cortex	Parietal_lobe	Posterior_partietal_cortex	Intraparietal_sulcus_region
+Dorsal_anterior_prefrontal_cortex	Prefrontal_cortex				Frontal_eye_field
+Thalamus					
+Right_anterior_inferior_parietal_lobe					
+					
+					
+					
+					
+					
