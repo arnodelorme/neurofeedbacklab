@@ -67,6 +67,7 @@ allowedFields = {
     'feedback'  'psychoToolbox'  false     '';
     'feedback'  'simplePlot'     false     'Simple feedback plot (true or false)';
     'feedback'  'feedbackfield'  ''        'Field to use for feedback (TCP/IP)';
+    'feedback'  'diary'          ''        'Field to save the log';
     ...
     'custom'    'field'          ''        ''
     'custom'    'func'         ''        ''

@@ -63,6 +63,11 @@ function nfblab_process(varargin)
 g = nfblab_setfields([], varargin{:});
 if isempty(g), return; end
 
+if isfield(g.feedback, 'diary') && ~strcmpi(g.feedback.diary, 'off')
+    dateTmp = datestr(now, 30);
+    diary([ 'nfblab_log_' dateTmp '.txt']);
+end
+
 % g.session.runmode = [];
 
 import java.io.*; % for TCP/IP
