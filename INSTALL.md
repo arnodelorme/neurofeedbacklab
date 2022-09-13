@@ -57,4 +57,4 @@ If successful, the variable <i>chunk</i> should contain a chunk of data, and it 
 
 # Getting started with running Neurofeedback experiments
 
-Run and modify the file [nfblab_run_template.m](https://github.com/arnodelorme/neurofeedbacklab/blob/master/src/nfblab_run_template.m) to get started. Change the number of channels and sampling rate to match your system. Neurofeedbacklab should be able to pick up the LSL stream of type EEG. If it does not, troubleshoot LSL as explained in the previous sections.
+Run and modify the file [nfblab_run_template.m](https://github.com/arnodelorme/neurofeedbacklab/blob/master/src/nfblab_run_template.m) to get started. Change the number of channels and sampling rate to match your system. Neurofeedbacklab should be able to pick up the LSL stream of type EEG. If it does not, troubleshoot LSL as explained in the previous sections. Change the options as needed to match your Neurofeedback protocol.
