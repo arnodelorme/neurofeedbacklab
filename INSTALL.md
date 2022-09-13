@@ -56,3 +56,7 @@ figure; plot(chunk');
 ```
 
 If succesful, chunk should contain a chunk of data and it should show on the command line, otherwise it will show [] (which means empty in Matlab) or generate an error. You can also use the function lsl_resolve_byprop to find streams (lsl_resolve_byprop(lib, 'type', ‘EEG', 'name’, ‘’))
+
+# Getting started
+
+Run and modify the file [nfblab_run_template.m](https://github.com/arnodelorme/neurofeedbacklab/blob/master/src/nfblab_run_template.m) to get started. Change the number of channels and sampling rate to match your system. Neurofeedbacklab should be able to pick up the LSL stream of type EEG. If it does not, troubleshoot LSL as explained in the previous sections.
