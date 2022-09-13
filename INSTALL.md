@@ -53,7 +53,7 @@ pause(1);
 figure; plot(chunk');
 ```
 
-If successful, the variable <i>chunk</a> should contain a chunk of data, and it should show on the command line. Otherwise, it will show [] (which means empty in Matlab) or generate an error. You can also use the function lsl_resolve_byprop to find streams (lsl_resolve_byprop(lib, 'type', ‘EEG', 'name’, ‘’)).
+If successful, the variable <i>chunk</i> should contain a chunk of data, and it should show on the command line. Otherwise, it will show [] (which means empty in Matlab) or generate an error. You can also use the function lsl_resolve_byprop to find streams (lsl_resolve_byprop(lib, 'type', ‘EEG', 'name’, ‘’)).
 
 # Getting started
 
