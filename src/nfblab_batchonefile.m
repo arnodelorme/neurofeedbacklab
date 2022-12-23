@@ -17,6 +17,12 @@ else
     filePath = '';
     fileBase = '';
 end
+if nargin > 1
+    if ~ischar(fileOut) || ~length(fileOut>4) || ...
+            ~isequal(lower(fileOut(end-3:end)), 'json')
+        error('Argument 2 when provided should be a JSON file')
+    end
+end
 
 % check path
 if ~isdeployed
@@ -33,12 +39,11 @@ end
     'deletelog' 'string' { 'on' 'off' } 'on';
     'customimportfunc' 'string' {} '';
     'fileNameAsr' 'string' {} fullfile(filePath, [ fileBase '_asr.mat' ]); ...
-    'fileNameRaw' 'string' {} fullfile(filePath, [ fileBase '_nfblab.mat' ]); ...
+    'fileNameRaw' 'string' {} fullfile(filePath, [ fileBase '_nfblab.set' ]); ...
     'fileNameOut' 'string' {} fullfile(filePath, [ fileBase '_out.mat' ]) }, 'nfblab_batchonefile', 'ignore');
 if ischar(g)
     error(g);
 end
-
 subjectAge = [];
 if ~isempty(g.subjectid)
     ageids = loadtxt(g.agefile);
@@ -62,6 +67,10 @@ subjectData = [];
 
 if ischar(fileNames)
     allFiles = dir(fileNames);
+    if isempty(allFiles)
+        disp('No file found')
+        return;
+    end
 end
 for iFile = 1:length(allFiles)
     fileName = fullfile(allFiles(iFile).folder,  allFiles(iFile).name);
@@ -110,28 +119,39 @@ for iFile = 1:length(allFiles)
 
                 if ~isempty(EEG.data)
                     % recompute file
-                    options = { 'preset', 'allfreqs', ...
+                    options = { otheropts{:} ...
+                        'diary', 'off', ...
                         'streamFile' EEG, ...
                         'fileNameRaw', g.fileNameRaw, ...
-                        'fileNameOut', g.fileNameOut, otheropts{:} };
+                        'fileNameOut', g.fileNameOut,  };
+
+                    % handle freqprocess
+                    tmpOptions = options; % for baseline
+                    freqprocessFound = false;
+                    for iOpt = 1:2:length(options)
+                        if strcmpi(options{iOpt}, 'freqprocess') 
+                            tmpOptions{iOpt+1} = []; 
+                            freqprocessFound = true;
+                        end
+                    end
+                    if ~freqprocessFound
+                        options = [ options {'preset', 'allfreqs' }];
+                    end
 
                     % baseline for ASR
                     gtmp = struct(options{:});
+                    options = [ options {'TCPIP' false 'pauseSecond' 0 }];
                     if (isfield(gtmp, 'asrFlag') && gtmp(1).asrFlag == 1) || ...
                             (isfield(gtmp, 'icaFlag') && gtmp(1).icaFlag == 1) || ...
                             (isfield(gtmp, 'badchanFlag') && gtmp(1).badchanFlag == 1)
                         options = [ options { 'fileNameAsr' g.fileNameAsr } ];
-                        tmpOptions = options;
-                        for iOpt = 1:2:length(options)
-                            if strcmpi(options{iOpt}, 'freqprocess') tmpOptions{iOpt+1} = []; end
-                        end
                         nfblab_process('runmode', 'baseline', 'loretaFlag', false, tmpOptions{:}); % process once to get ASR and ICA weights
                     end
                     
                     % actual processings
                     if exist(fileNameLog, 'file') delete(fileNameLog); end
                     diary(fileNameLog);
-                    nfblab_process('runmode', 'trial', options{:});
+                    nfblab_process(options{:}, 'runmode', 'trial'); % later parameters overwrite earlier ones
                     diary('off');
                 else
                     fileNameLog = '';
@@ -193,6 +213,7 @@ for iFile = 1:length(allFiles)
             subjectDataTmp = load('-mat', statFile);
         end
     else
+        fprintf('File not read? Try using the ''forceread'', ''on'' option\n');
         subjectDataTmp = [];
     end
     
@@ -210,7 +231,7 @@ if ~isempty(subjectAge)
 end
 
 % check to output spectrum if relevant
-if isfield(subjectData(1).measures, 'f1') && length(subjectData) == 1
+if isfield(subjectData, 'measures') && isfield(subjectData(1).measures, 'f1') && length(subjectData) == 1
     m = subjectData(1).measures;
     spectrum = [ m.f1.mean m.f2.mean m.f3.mean m.f4.mean m.f5.mean m.f6.mean m.f7.mean m.f8.mean m.f9.mean m.f10.mean ...
         m.f11.mean m.f12.mean m.f13.mean m.f14.mean m.f15.mean m.f16.mean m.f17.mean m.f18.mean m.f19.mean m.f20.mean ...
