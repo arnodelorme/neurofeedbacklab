@@ -94,6 +94,8 @@ for iOpt = 1:length(options)
         options{iOpt} = options(iOpt);
     end
 end
+% find duplicate and keep the last one
+options = removedup(options);
 params = struct(options{:});
 paramsFields = fieldnames(params);
 for iField = 1:length(paramsFields)
@@ -133,9 +135,10 @@ if isempty(g.session.pauseSecond)
         g.session.pauseSecond = 0;
     end
 end
-if isempty(g.session.fileNameAsr),        g.session.fileNameAsr        = sprintf('asr_filter_%s.mat',  datestr(now, 'yyyy-mm-dd_HH-MM')); end
+if isempty(g.session.fileNameAsr),        g.session.fileNameAsr        = sprintf('data_nfblab_%s_asr_filter.mat',  datestr(now, 'yyyy-mm-dd_HH-MM')); end
 if isempty(g.session.fileNameOut),        g.session.fileNameOut        = sprintf('data_nfblab_%s.mat', datestr(now, 'yyyy-mm-dd_HH-MM')); end
-if isempty(g.session.fileNameAsrDefault), g.session.fileNameAsrDefault = sprintf('asr_filter_%s.mat',  datestr(now, 'yyyy-mm-dd_HH-MM')); end
+if isempty(g.session.fileNameRaw),        g.session.fileNameRaw        = sprintf('data_nfblab_%s_raw.set', datestr(now, 'yyyy-mm-dd_HH-MM')); end
+if isempty(g.session.fileNameAsrDefault), g.session.fileNameAsrDefault = sprintf('data_nfblab_%s_asr_filter.mat',  datestr(now, 'yyyy-mm-dd_HH-MM')); end
 if isempty(g.input.chanmask), g.input.chanmask = 1; end
 if ~isempty(g.measure.freqprocess) && isempty(g.feedback.feedbackfield), tmpFields = fieldnames(g.measure.freqprocess); g.feedback.feedbackfield = tmpFields{end}; end
 
@@ -255,3 +258,15 @@ if ~isdeployed
     addpath(fullfile(nfblabPath, 'liblsl-Matlab', 'bin'));
     % addpath(fullfile(nfblabPath, 'asr-matlab-2012-09-12')); % not required if copied the files above
 end
+
+% remove duplicates in the list of parameters
+% -------------------------------------------
+function cella = removedup(cella)
+    allFields = cella(1:2:end);
+    [tmp, indices, X] = unique_bc(allFields);
+    if length(tmp) ~= length(allFields)
+        Y = hist(X,unique(X));
+        fieldDuplicates = allFields(Y > 1);
+        fprintf(2,'Warning: duplicate ''%s'' parameter(s), keeping the last one(s)\n', fieldDuplicates{1});
+    end
+    cella = cella(sort(union(indices*2-1, indices*2)));
