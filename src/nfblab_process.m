@@ -63,9 +63,16 @@ function nfblab_process(varargin)
 g = nfblab_setfields([], varargin{:});
 if isempty(g), return; end
 
+% get current commit (will be saved along with the data
+g.commit = nfblab_version;
+
 if isfield(g.feedback, 'diary') && ~strcmpi(g.feedback.diary, 'off')
     dateTmp = datestr(now, 30);
-    diary([ 'nfblab_log_' dateTmp '.txt']);
+    if isempty(g.feedback.diary)
+        diary([ 'nfblab_log_' dateTmp '.txt']);
+    else
+        diary(g.feedback.diary);
+    end
 end
 
 % g.session.runmode = [];
@@ -135,7 +142,7 @@ elseif strcmpi(g.session.runmode, 'baseline')
     iMsg = 1;
 elseif strcmpi(g.session.runmode, 'trial')
     if isequal(g.session.fileNameAsrDefault, g.session.fileNameAsr) && (g.preproc.asrFlag || g.preproc.icaFlag || g.preproc.badchanFlag)
-        asrFiles = dir('asr_filter_*.mat');
+        asrFiles = dir('*asr_filter*.mat');
         if isempty(asrFiles)
             error('No baseline file found in current folder, run baseline first');
         else
@@ -419,7 +426,7 @@ while 1
         EEG.nbchan = length(g.input.chans);
         EEG.srate  = g.input.srate;
         EEG.xmin   = 0;
-        if isfield(g.input, 'chanlocs')
+        if isfield(g.input, 'chanlocs') && ~isempty(g.input.chanlocs)
             EEG.chanlocs = g.input.chanlocs(g.input.chans); % required for Loreta
         else
             EEG.chanlocs = [];
