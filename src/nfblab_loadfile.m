@@ -1,3 +1,6 @@
+% nfblab_process support function to stream a file as if it was
+% real-time data. This function formats the file as a stream of data
+
 function [streamFileData, chanlocs] = nfblab_loadfile(streamFile)
     
     if ~isstruct(streamFile)

@@ -1,0 +1,6 @@
+Augular_gyrus_L	Prefrontal_cortex_L	Post_cingulate_cortex_L	Insular_cortex_L	Dorsal_anterior_cingulate_cortex_L	Dorso_lateral_prefrontal_cortex_L	Parietal_lobe_L	Frontal_midline_cortex_L	Frontal_operculum_L	Dorsal_anterior_prefrontal_cortex_L	Thalamus_L	Right_anterior_inferior_parietal_lobe_L	Posterior_partietal_cortex_L	Frontal_eye_field_L	Intraparietal_sulcus_region_L	Visual_cortex_L	Augular_gyrus_R	Prefrontal_cortex_R	Post_cingulate_cortex_R	Insular_cortex_R	Dorsal_anterior_cingulate_cortex_R	Dorso_lateral_prefrontal_cortex_R	Parietal_lobe_R	Frontal_midline_cortex_R	Frontal_operculum_R	Dorsal_anterior_prefrontal_cortex_R	Thalamus_R	Right_anterior_inferior_parietal_lobe_R	Posterior_partietal_cortex_R	Frontal_eye_field_R	Intraparietal_sulcus_region_R	Visual_cortex_R
+39L	24L	23L	13L	24L	8L	3L	6L	42L	8L	ThalamusL	39L	7L	8L	7L	17L	39R	24R	23R	13R	24R	8R	3R	6R	42R	8R	ThaRamusR	39R	7R	8R	7R	17R
+	25L	31L		32L	9L	5L	8L		9L		40L	39L			18L		25R	31R		32R	9R	5R	8R		9R		40R	39R			18R
+	32L			33L	10L	7L	9L		10L			40L			19L		32R			33R	10R	7R	9R		10R			40R			19R
+	33L				46L	39L											33R				46R	39R									
+						40L																40R									

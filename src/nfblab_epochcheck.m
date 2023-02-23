@@ -1,4 +1,8 @@
-% check event information
+% This function check epoch extraction information
+% Based on your parameters, epoch extraction might not be possible
+% (the Neurofeedback sliding window need to be larger than the data epochs
+% also taking into account the frequency of the events)
+
 function [evt,nonEventChans] = nfblab_epochcheck(evt, chans, windowSize, windowInc, srateHardware, srate)
 
 if isempty(evt)

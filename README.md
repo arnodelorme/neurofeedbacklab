@@ -11,6 +11,7 @@ Neurofeedbacklab is a neurofeedback software approach based on Matlab. It uses E
   - ROICONNECT if you want to do real time eLoreta and connectivity analysis
 - LSL install released code from https://github.com/labstreaminglayer/liblsl-Matlab/releases
 - Matlab psychophysics toolbox http://psychtoolbox.org/ if you want visual feedback
+- Matlab Audio toolbox http://psychtoolbox.org/ if you want audio feedback
 
 See the [INSTALL.md](INSTALL.md) documentation.
 

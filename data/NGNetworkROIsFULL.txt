@@ -1,0 +1,39 @@
+Addiction_Reward	Anxiety	Attention_Dorsal	Attention_Ventral	Autism	Default_Mode	Executive_Function	Face_Object_Recognition	Language	Memory_Emotion	Mirror_Neuron	Mood	Pain	Pleasure	Salience	Schizophrenia	Tinnitus	DTI_Frontal_Limbic	DTI_Frontal_Occipital	DTI_Frontal_Parietal	DTI_Frontal_Temporal	DTI_Local_Frontal	DTI_Local_Limbic	DTI_Local_Occipital	DTI_Local_Parietal	DTI_Local_Temporal	Hagmann_1	Hagmann_2	Hagmann_3	Hagmann_4	Hagmann_5	Hagmann_6	Isocortex_Hippocampocentric	Isocortex_Olfactocentric	Mesocortex_Hippocampocentric	Mesocortex_Olfactocentric	Mesulam_Emotional_Memory	Mesulam_Executive_Function	Mesulam_Face_Object_Indentification	Mesulam_Language	Mesulam_Spatial_Attention	ICN_1	ICN_2	ICN_4	ICN_6	ICN_7	ICN_8	ICN_9	ICN_10	ICN_11_12	ICN_13	ICN_15	ICN_16	ICN_18	WorkingMemory
+13aL	4L	6L	10L	7R	2L	5L	7L	 22L	7L	13aL	10L	1L	8L	8L	8L	9L	8L	8L	1L	 4L	4L	23L	17L	1L	20L	 17L	4L	1R	1L	3R	3L	7L	19L	23L	11L	28L	5L	17L	22L	6R	28L	10L	13aL	5L	7L	1L	5L	37L	17L	10L	22L	41L	44L	7L
+13aR	4R	6R	10R	11R	2R	5R	7R	39L	7R	13aR	10R	1R	8R	8R	8R	9R	8R	8R	1R	4R	4R	23R	17R	1R	20R	17R	4R	2R	2L	8R	8L	7R	19R	23R	11R	28R	5R	18L	39L	7R	28R	10R	13aR	5R	7R	1R	5R	37R	17R	10R	39L	41R	45L	7R
+24L	6L	7L	11L	13aR	7L	7L	9L	40L	9L	27L	11L	2L	9L	9L	9L	10L	9L	9L	2L	6L	6L	24L	18L	2L	21L	18L	5L	3R	3L	9R	9L	8L	20L	24L	13aL	34L	7L	19L	40L	8R	34L	11L	24L	 6L	46L	2L	7L	39L	18L	11L	40L	42L		8L
+24R	6R	7R	11R	18R	7R	7R	9R	41L	9R	27R	11R	2R	9R	9R	9R	10R	9R	9R	2R	6R	6R	24R	18R	2R	21R	18R	5R	6R	4L	10R	10L	8R	20R	24R	13aR	34R	7R	20L	41L	9R	34R	11R	24R	6R	46R	2R	7R	39R	18R	11R	44L	42R		8R
+25L	7L	8L	19L	21R	10L	8L	10L	42L	24L	40L	13aL	3L	10L	10L	10L	13aL	10L	10L	3L	8L	8L	25L	19L	3L	22L	19L	23L	20R	6L	11R	11L	9L	21L	27L	38L	35L	8L	21L	42L	39R	35L	25L	33L	8L		3L			19L	19L	45L			9L
+25R	7R	8R	19R	23R	10R	8R	10R	44L	24R	40R	13aR	3R	10R	10R	10R	13aR	10R	10R	3R	8R	8R	25R	19R	3R	22R	19R	23R	21R	20L	24R	24L	9R	21R	27R	38R	35R	8R	37L	44L		35R	25R	33R	8R		3R			19R	19R				9R
+32L	10L	9L	21L	24R	11L	9L	11L	45L	30L	44L	23L	4L	24L	13aL	11L	21L	11L	11L	5L	9L	9L	27L	37L	5L	37L		31L	22R	21L	25R	25L	10L	22L	28L		36L	9L	38L	45L		36L			9L		4L				23L				24L
+32R	10R	9R	21R	30R	11R	9R	11R		30R	44R	23R	4R	24R	13aR	11R	21R	11R	11R	5R	9R	9R	27R	37R	5R	37R		31R	27R	22L	28R	28L	10R	22R	28R		36R	9R				36R			9R		4R				23R				24R
+34L	13L	19L	37L	44R	19L	10L	17L		31L	45L	24L	5L	30L	22L	13aL	22L	23L	17L	7L	10L	10L	29L		7L	38L			28R	27L	33R	33L	19L	24L	29L			10L				38L									31L				30L
+34R	13R	19R	37R	45R	19R	10R	17R		31R	45R	24R	5R	30R	22R	13aR	22R	23R	17R	7R	10R	10R	29R		7R	38R			34R	28L	34R	34L	19R	24R	29R			10R				38R									31R				30R
+44L	21L	39L	44L	46R	29L	11L	18L		32L	46L	32L	13aL	32L	23L	21L	23L	24L	18L	8L	20L	11L	30L		19L	40L			35R	34L	38R	38L	20L	25L	30L			11L																	31L
+44R	21R	39R	44R		29R	11R	18R		32R	46R	32R	13aR	32R	23R	21R	23R	24R	18R	8R	20R	11R	30R		19R	40R			36R	35L	44R	44L	20R	25R	30R			11R																	31R
+45L		40L	45L		30L	46L	19L		33L		33L	24L	33L	24L	23L	24L	25L	19L	9L	21L	44L	32L		39L	41L			37R	36L	45R	45L	21L	32L	35L			46L																	32L
+45R		40R	45R		30R	46R	19R		33R		33R	24R	33R	24R	23R	24R	25R	19R	9R	21R	44R	32R		39R	41R			38R	37L	47R	47L	21R	32R	35R			46R																	32R
+46L					31L	47L	20L		40L		44L	32L	34L	25L	24L	25L	27L	37L	10L	22L	45L	33L		40L				40R	38L			22L	36L	36L			47L																	33L
+46R					31R	47R	20R		40R		44R	32R	34R	25R	24R	25R	27R	37R	10R	22R	45R	33R		40R				41R	40L			22R	36R	36R			47R																	33R
+47L					35L		21L				45L	33L	44L	29L	28L	30L	28L	45L	39L	38L	46L	34L							41L			31L	37L																					40L
+47R					35R		21R				45R	33R	44R	29R	28R	30R	28R	45R	39R	38R	46R	34R										31R	37R																					40R
+ThalamusL					39L		27L				47L	ThalamusL	45L	30L	30L	32L	29L	46L	40L	40L	47L	35L										32L	47L																					 
+ThalamusR					39R		27R				47R	ThalamusR	45R	30R	30R	32R	29R	46R	40R	40R	47R	35R										32R	47R																					 
+ 					40L		38L				ThalamusL		47L	31L	33L	33L	30L		45L	41L		36L										46L																						
+ 					40R		38R				ThalamusR		47R	31R	33R	33R	30R		45R	41R		36R										46R																						
+							40L						laL	32L	47L	34L	31L		46L	42L												47L																						
+							40R						laR	32R	47R	34R	31R		46R	42R												47R																						
+													usL	33L	ThalamusL	40L	32L			45L																																		
+													usR	33R	ThalamusR	40R	32R			45R																																		
+																45L	33L			46L																																		
+																45R	33R			46R																																		
+																46L	34L																																					
+																46R	34R																																					
+																	35L																																					
+																	35R																																					
+																	44L																																					
+																	44R																																					
+																	45L																																					
+																	45R																																					
+																	46L																																					
+																	46R																																					

@@ -1,3 +1,5 @@
+% This is legacy code that can be ignored
+
 function neurofeedback_process(runtype, setupFileName)
 
 global serialPort;

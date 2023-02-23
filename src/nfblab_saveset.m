@@ -1,4 +1,4 @@
-% support file for nfblab_process()
+% support file for nfblab_process to save the raw data
 
 function EEG = nfblab_saveset( fileNameRaw, chans, srate, chanlabels)
 

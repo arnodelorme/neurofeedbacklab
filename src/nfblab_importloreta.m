@@ -1,3 +1,5 @@
+% Legacy function no longer used to import loreta information
+
 function [loretadata, freqs4 ] = nfblab_importloreta( filename )
 
 % tmp = loadtxt(filename, 'delim', ',', 'verbose', 'off', 'convert', 'off');

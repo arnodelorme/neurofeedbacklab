@@ -1,3 +1,5 @@
+% nfblab_process support function to interpolate bad channels in real time
+
 function chunk = nfblab_interp(chunk, chanlocs, chanInds)
 
 EEG = eeg_emptyset;

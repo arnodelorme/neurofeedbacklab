@@ -1,31 +1,36 @@
+% This function contains all the default parameters
+% Use
+% nfblab_process('help', true)
+
 function g = nfblab_setfields(g, varargin)
 
 % measure parameters
 % -------------------
 % allow field set to empty if they do not exist
 allowedFields = { 
-    'session'   'runmode'        ''     '"baseline" to record a baseline "trial" for normal feedback or "slave" when controled through TCPIP';
-    'session'   'warnsrate'      false  'Issue warning when actual sampling rate differs from the one above';
-    'session'   'fileNameAsr'    ''     'ASR file name';
-    'session'   'fileNameOut'    ''     'Name of the output Matlab file';
-    'session'   'fileNameRaw'    ''     'Name of the raw data file';
+    'session'   'runmode'        ''     '"baseline" to record a baseline "trial" for normal feedback, "slave" when controled through TCPIP or empty to query user.';
+    'session'   'warnsrate'      false  'Issue warning when actual sampling rate differs from the stream (0 or 1).';
+    'session'   'fileNameAsr'    ''     'ASR file name.';
+    'session'   'fileNameOut'    ''     'Name of the output Matlab file.';
+    'session'   'fileNameRaw'    ''     'Name of the raw data file.';
     'session'   'fileNameAsrDefault' '' '';
-    'session'   'TCPIP'          false  'Send feedback to client through TCP/IP socket';
-    'session'   'TCPport'        9789   'Port to use to connect through TCP/IP';
-    'session'   'pauseSecond'    []     'Pause between each loop (to give the time for LSL to acquire data). If 0 each sample is processed independantly slowing down computation';
-    'session'   'baselineSessionDuration' 60 'Duration of baseline in second (the baseline is used to train the artifact removal ASR function)';
-    'session'   'sessionDuration' 60*60 'Regular (trial) sessions - here 1 hour';
-    'session'   'help'            false  '';
+    'session'   'TCPIP'          false  'Send feedback to client through TCP/IP socket (0 for false, 1 for true).';
+    'session'   'TCPport'        9789   'Port to use to connect through TCP/IP.';
+    'session'   'pauseSecond'    []     'Pause between each loop (to give the time for LSL to acquire data). If 0 (no pause) very small data chucks are processed, slowing down computation. Default is to calculated from sampling rate.';
+    'session'   'baselineSessionDuration' 60 'Duration of baseline in second (the baseline is used to train the artifact removal ASR function).';
+    'session'   'sessionDuration' 60*60 'Regular (trial) sessions in seconds.';
+    'session'   'help'            false  'Show help message (0 for false, 1 for true).';
+    'session'   'checkglobalmsg'  ''     'Variable name in global workspace to check for message. Used for GUI interaction.';
     ...
-    'input'     'streamFile'     ''      'If not empty stream a file instead of using LSL';
-    'input'     'lsltype'        'EEG'   'This is the type of the LSL stream. Use empty if you cannot connect to your hardware';
-    'input'     'lslname'        ''      'This is the name of the stream that shows in Lab Recorder';
-    'input'     'chans'          []      'Indices of data channels to process';
+    'input'     'streamFile'     ''      'If not empty stream a file instead of using LSL.';
+    'input'     'lsltype'        'EEG'   'This is the type of the LSL stream. Use empty if you cannot connect to your hardware.';
+    'input'     'lslname'        ''      'This is the name of the stream that shows in Lab Recorder.';
+    'input'     'chans'          []      'Indices of data channels to process. Default is [] or all.';
     'input'     'srate'          250     'Sampling rate';
-    'input'     'srateHardware'  ''      'Sampling rate of the hardware (will default to sampling rate if empty)';
-    'input'     'windowSize'     []      'Length of window size for FFT (if equal to srate then 1 second)';
-    'input'     'windowInc'      0.25    'Window increment/frequency of feedback in fraction of second or samples, default is 1/4 of a second';
-    'input'     'chanmask'       []      'Spatial filter for feedback. Default is none.';
+    'input'     'srateHardware'  ''      'Sampling rate of the hardware (will default to sampling rate above if empty). Use a multiple to downsample the data (e.g. with 500, every other sample is ignored).';
+    'input'     'windowSize'     250     'Length of window size for FFT (if equal to srate then 1 second).';
+    'input'     'windowInc'      0.25    'Window increment/frequency of feedback in fraction of second or samples, default is 0.25 second.';
+    'input'     'chanmask'       []      'Spatial filter for feedback (one row per channel). For example [1 -1; 0 0] will compute channel 1 minus 2. Default is "eye" or square matrix with ones on the diagonal ([1 0; 0 1] for 2 channels).';
     'input'     'chanlabels'     ''      '';
     ...
     'preproc'   'filtFlag'       true    'Filter data (true or false)';
@@ -39,38 +44,39 @@ allowedFields = {
     'preproc'   'chanCorr'       0.65    'Minimum channel correlation ChannelCriterion for rejecting bad channels. Require baseline file.';
     'preproc'   'badChans'       []      '';     % indices of bad channels, overwriten by baseline file when badchanFlag is true.
     ...
-    'measure'   'freqrange'      { [3.5 6.5] } 'Frequency ranges of interest';
-    'measure'   'freqdb'         true      'Convert power to dB scale (true or false)'; % convert power to dB
-    'measure'   'freqprocess'    struct('thetaChan1', @(x)x(1)) 'Structure with function in each field. Default is theta power of channel 1';
+    'measure'   'freqrange'      { [3.5 6.5] } 'Frequency ranges of interest.';
+    'measure'   'freqdb'         true      'Convert power to dB scale (true or false).'; % convert power to dB
+    'measure'   'freqprocess'    struct('thetaChan1', @(x)x(1)) 'Structure with function in each field. Default is theta power of channel 1.';
     'measure'   'addfreqprocess' ''        '';
-    'measure'   'loretaFlag'     false     '';
-    'measure'   'loreta_file'    ''        '';
-    'measure'   'freqloreta'     []        '';
-    'measure'   'normfile'       ''        '';
-    'measure'   'normagerange'   []        'Age range of the person being tested';
+    'measure'   'loretaFlag'     false     'Flag to compute eLoreta (beta).';
+    'measure'   'loreta_file'    ''        'Loreta file to provide as input.';
+    'measure'   'freqloreta'     []        'Function to compute Loreta.';
+    'measure'   'normfile'       ''        'File containing normative value per age range.';
+    'measure'   'normagerange'   []        'Age range of the person being tested.';
     'measure'   'evt'            ''        '';
-    'measure'   'nfft'           []        'Length of FFT - allows FFT padding if necessary';
+    'measure'   'nfft'           []        'Length of FFT - allows FFT padding if necessary.';
     'measure'   'connectprocess' []        'Structure with function in each field.';
-    'measure'   'preset'         'default' 'Preset type of feedback, ''default'' is theta, ''allfreqs'' is all frequencies for all channels';
+    'measure'   'preset'         'default' 'Preset type of feedback, ''default'' is theta, ''allfreqs'' is all frequencies for all channels.';
     ...
-    'feedback'  'feedbackMode'   'dynrange' '"dynrange" or "threshold" see help message';
+    'feedback'  'feedbackMode'   'dynrange' '"dynrange" for dynamic continuous range or "threshold" for crossing threshold mode.';
     'feedback'  'threshold'      ''        'Threshold value at startup';
-    'feedback'  'thresholdMem'   ''        'Threshold memory. A memory of 75% is new_threshold = current_value * 0.25 + old_threshold * 0.75';
-    'feedback'  'thresholdMode'  'go'      'Can be "go" (1 when above threshold, 0 otherwise) or "stop" (1 when below threshold, 0 otherwise)';
-    'feedback'  'thresholdWin'   180       'Window to compute threshold in second, use NaN if you do not want to use a window';
-    'feedback'  'thresholdPer'   0.8       'Set threshold to percentage of value in the window above';
-    'feedback'  'maxChange'      0.05      'Cap for change in feedback between processed, windows every 1/4 sec. feedback is between 0 and 1, so this is 5% here';    
-    'feedback'  'dynRange'       [16 29]   'Power range at startup in dB';
-    'feedback'  'dynRangeInc'    0.0333    'Increase in dynamical range in percent if the, power value is outside the range (every window increment)';
-    'feedback'  'dynRangeDec'    0.01      'Decrease in dynamical range in percent if the, power value is outside the range (every window increment)';
-    'feedback'  'capdBchange'    1000      'Maximum dB change from one block to the next. 1000 means disabled';
-    'feedback'  'psychoToolbox'  false     '';
-    'feedback'  'simplePlot'     false     'Simple feedback plot (true or false)';
-    'feedback'  'feedbackfield'  ''        'Field to use for feedback (TCP/IP)';
-    'feedback'  'diary'          ''        'Field to save the log';
+    'feedback'  'thresholdMem'   ''        'Threshold memory. A memory of 75% is new_threshold = current_value * 0.25 + old_threshold * 0.75.';
+    'feedback'  'thresholdMode'  'go'      'Can be "go" (1 when above threshold, 0 otherwise) or "stop" (1 when below threshold, 0 otherwise).';
+    'feedback'  'thresholdWin'   180       'Window to compute threshold in second, use NaN if you do not want to use a window.';
+    'feedback'  'thresholdPer'   0.8       'Set threshold to percentage of value in the window above.';
+    'feedback'  'dynRange'       [16 29]   'Power range at startup in dB.';
+    'feedback'  'dynRangeInc'    0.0333    'Increase in dynamical range in percent if the, power value is outside the range (every window increment).';
+    'feedback'  'dynRangeDec'    0.01      'Decrease in dynamical range in percent if the, power value is outside the range (every window increment).';
+    'feedback'  'maxChange'      0.05      'Cap for change in feedback between processed, windows every 1/4 sec. Dynamic range only. Feedback is between 0 and 1, so this is 5% here.';    
+    'feedback'  'capdBchange'    1000      'Maximum dB change from one block to the next for the raw spectral value used to compute feedback. 1000 means disabled.';
+    'feedback'  'feedbackfield'  ''        'Field to use for feedback (see freqprocess output; default is to use the first field of the freqprocess output).';
+    'feedback'  'diary'          ''        'Field to save the log.';
+    'feedback'  'funcinit'       ''        'Feedback output initialization function.';
+    'feedback'  'funcfeedback'   'nfblab_feedback_simpleplot'        'Feedback output (audio, visualization) function (takes one feedback parameter as input). Default is to plot power.';
+    'feedback'  'funcend'        ''        'Feedback output termination function.';
     ...
     'custom'    'field'          ''        ''
-    'custom'    'func'         ''        ''
+    'custom'    'func'           ''        ''
     };
 
 if ~isfield(g, 'session'),  g.session = []; end
@@ -207,23 +213,18 @@ if isempty(g.preproc.A) %g.preproc.filtFlag
     ws=(hicutoff-trans_bw)/nyq;
     wp=(hicutoff)/nyq;
     [N,wn] = ellipord(wp,ws,rp,rs);
-    fprintf('HPF has cutoff of %1.1f Hz, transition bandwidth of %1.1f Hz and its order is %1.1f\n',hicutoff, trans_bw,N);
+    if ~g.session.help
+        fprintf('HPF has cutoff of %1.1f Hz, transition bandwidth of %1.1f Hz and its order is %1.1f\n',hicutoff, trans_bw,N);
+    end
     [g.preproc.B,g.preproc.A]=ellip(N,rp,rs,wn, 'high');
 end
 
 % Print options on command line
 % -----------------------------
-fprintf('\n**********************\n')
-fprintf('**********************\n')
-fprintf('** NEUROFEEDBACKLAB **\n')
-fprintf('**********************\n')
-fprintf('**********************\n')
-fprintf('\nRefer to help message for more\n');
-fprintf('information about parameters\n\n');
 currentHead = '';
 for iField = 1:length(allowedFields)
     curVal = g.(allowedFields{iField,1}).(allowedFields{iField,2});
-    if ~isequal(currentHead, allowedFields{iField,1})
+    if ~isequal(currentHead, allowedFields{iField,1}) && ~isequal( allowedFields{iField,1}, 'custom')
         currentHead = allowedFields{iField,1};
         header = sprintf('* %s parameters *', currentHead);
         footer = char(ones(1,length(header))*42);
@@ -231,7 +232,14 @@ for iField = 1:length(allowedFields)
     end
     if g.session.help
         if ~isempty(allowedFields{iField,4})
-            fprintf('    %-24s %s\n', allowedFields{iField,2}, allowedFields{iField,4});
+            if ~isempty(allowedFields{iField,3})
+                strval = vararg2str(allowedFields{iField,3});
+            elseif isnumeric(allowedFields{iField,3})
+                strval = '[]';
+            else
+                strval = '''''';
+            end
+            fprintf('    %-24s %s Default value is %s.\n', allowedFields{iField,2}, allowedFields{iField,4}, strval);
         end
     else
         if strcmpi(allowedFields{iField,2}, 'streamFile')

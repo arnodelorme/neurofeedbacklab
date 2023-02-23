@@ -1,9 +1,12 @@
-% Read all results for a given subject
+% Reprocess data from a single subject (take .csv, .set, .edf, .xdf)
+% file as input and reprocess it as it was streamed
 %
-% res = nfblab_batchonefile('sub-000xxx')
-% res = nfblab_batchonefile('sub-000xxx', 'test.json');
+% res = nfblab_batchonefile(fileName, 'out.json');
+% res = nfblab_batchonefile(folderName, 'out.json', 'key', val);
 %
-% See also optional arguments
+% See also optional arguments inside the function
+% This function was made for a particiular purpose at a specific time
+% It might need to be modified to be general purpose
 
 function [subjectData,spectrum] = nfblab_batchonefile(fileNames, fileOut, varargin)
 

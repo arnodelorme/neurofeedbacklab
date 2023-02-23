@@ -1,0 +1,216 @@
+<deployment-project plugin="plugin.ezdeploy" plugin-version="1.0">
+  <configuration build-checksum="1960276220" file="/System/Volumes/Data/data/curtis/NTL-EEGLAB/ntl_prediction/neurofeedbacklab/src/nfblab_cyton.prj" location="/System/Volumes/Data/data/curtis/NTL-EEGLAB/ntl_prediction/neurofeedbacklab/src" name="nfblab_cyton" preferred-package-location="/System/Volumes/Data/data/curtis/NTL-EEGLAB/ntl_prediction/neurofeedbacklab/src/nfblab_cyton/for_redistribution" preferred-package-type="package.type.app" target="target.ezdeploy.standalone" target-name="Application Compiler">
+    <param.appname>nfblab_cyton</param.appname>
+    <param.icon />
+    <param.icons />
+    <param.version>1.0</param.version>
+    <param.authnamewatermark />
+    <param.email />
+    <param.company />
+    <param.summary />
+    <param.description />
+    <param.screenshot />
+    <param.guid />
+    <param.installpath.string>/nfblab_cyton/</param.installpath.string>
+    <param.installpath.combo>option.installpath.systemwideapp</param.installpath.combo>
+    <param.logo />
+    <param.install.notes />
+    <param.target.install.notes>In the following directions, replace MR/v911 by the directory on the target machine where MATLAB is installed, or MR by the directory where the MATLAB Runtime is installed.
+
+If the environment variable DYLD_LIBRARY_PATH is undefined, set it to the following string:
+
+MR/v911/runtime/maci64:MR/v911/sys/os/maci64:MR/v911/bin/maci64
+
+If it is defined, set it to the following:
+
+${DYLD_LIBRARY_PATH}:MR/v911/runtime/maci64:MR/v911/sys/os/maci64:MR/v911/bin/maci64</param.target.install.notes>
+    <param.intermediate>${PROJECT_ROOT}/nfblab_cyton/for_testing</param.intermediate>
+    <param.files.only>${PROJECT_ROOT}/nfblab_cyton/for_redistribution_files_only</param.files.only>
+    <param.output>${PROJECT_ROOT}/nfblab_cyton/for_redistribution</param.output>
+    <param.logdir>${PROJECT_ROOT}/nfblab_cyton</param.logdir>
+    <param.enable.clean.build>false</param.enable.clean.build>
+    <param.user.defined.mcr.options />
+    <param.target.type>subtarget.standalone</param.target.type>
+    <param.support.packages />
+    <param.web.mcr>true</param.web.mcr>
+    <param.package.mcr>false</param.package.mcr>
+    <param.no.mcr>false</param.no.mcr>
+    <param.web.mcr.name>MyAppInstaller_web</param.web.mcr.name>
+    <param.package.mcr.name>MyAppInstaller_mcr</param.package.mcr.name>
+    <param.no.mcr.name>MyAppInstaller_app</param.no.mcr.name>
+    <param.windows.command.prompt>false</param.windows.command.prompt>
+    <param.create.log>false</param.create.log>
+    <param.log.file />
+    <param.native.matlab>false</param.native.matlab>
+    <param.checkbox>false</param.checkbox>
+    <param.example />
+    <param.help.text>Syntax 
+	  -? 
+	 
+ Input Arguments 
+	 -?  print help on how to use the application 
+	 input arguments</param.help.text>
+    <unset>
+      <param.icon />
+      <param.icons />
+      <param.version />
+      <param.authnamewatermark />
+      <param.email />
+      <param.company />
+      <param.summary />
+      <param.description />
+      <param.screenshot />
+      <param.guid />
+      <param.installpath.string />
+      <param.installpath.combo />
+      <param.logo />
+      <param.install.notes />
+      <param.intermediate />
+      <param.files.only />
+      <param.output />
+      <param.logdir />
+      <param.enable.clean.build />
+      <param.user.defined.mcr.options />
+      <param.target.type />
+      <param.support.packages />
+      <param.web.mcr />
+      <param.package.mcr />
+      <param.no.mcr />
+      <param.web.mcr.name />
+      <param.package.mcr.name />
+      <param.no.mcr.name />
+      <param.windows.command.prompt />
+      <param.create.log />
+      <param.log.file />
+      <param.native.matlab />
+      <param.checkbox />
+      <param.example />
+    </unset>
+    <fileset.main>
+      <file>${PROJECT_ROOT}/neurofeeebacklab_ntl_support/nfblab_cyton.m</file>
+    </fileset.main>
+    <fileset.resources>
+      <file>${PROJECT_ROOT}/liblsl-Matlab/bin/liblsl.1.14.0.dylib</file>
+      <file>${PROJECT_ROOT}/liblsl-Matlab/bin/liblsl.dylib</file>
+      <file>${PROJECT_ROOT}/liblsl-Matlab/bin/lsl_append_child.mexmaci64</file>
+      <file>${PROJECT_ROOT}/liblsl-Matlab/bin/lsl_append_child_value.mexmaci64</file>
+      <file>${PROJECT_ROOT}/liblsl-Matlab/bin/lsl_append_copy.mexmaci64</file>
+      <file>${PROJECT_ROOT}/liblsl-Matlab/bin/lsl_child.mexmaci64</file>
+      <file>${PROJECT_ROOT}/liblsl-Matlab/bin/lsl_child_value.mexmaci64</file>
+      <file>${PROJECT_ROOT}/liblsl-Matlab/bin/lsl_child_value_n.mexmaci64</file>
+      <file>${PROJECT_ROOT}/liblsl-Matlab/bin/lsl_close_stream.mexmaci64</file>
+      <file>${PROJECT_ROOT}/liblsl-Matlab/bin/lsl_create_inlet.mexmaci64</file>
+      <file>${PROJECT_ROOT}/liblsl-Matlab/bin/lsl_create_outlet.mexmaci64</file>
+      <file>${PROJECT_ROOT}/liblsl-Matlab/bin/lsl_create_streaminfo.mexmaci64</file>
+      <file>${PROJECT_ROOT}/liblsl-Matlab/bin/lsl_destroy_inlet.mexmaci64</file>
+      <file>${PROJECT_ROOT}/liblsl-Matlab/bin/lsl_destroy_outlet.mexmaci64</file>
+      <file>${PROJECT_ROOT}/liblsl-Matlab/bin/lsl_destroy_streaminfo.mexmaci64</file>
+      <file>${PROJECT_ROOT}/liblsl-Matlab/bin/lsl_empty.mexmaci64</file>
+      <file>${PROJECT_ROOT}/liblsl-Matlab/bin/lsl_first_child.mexmaci64</file>
+      <file>${PROJECT_ROOT}/liblsl-Matlab/bin/lsl_freelib_.mexmaci64</file>
+      <file>${PROJECT_ROOT}/liblsl-Matlab/bin/lsl_get_channel_count.mexmaci64</file>
+      <file>${PROJECT_ROOT}/liblsl-Matlab/bin/lsl_get_channel_format.mexmaci64</file>
+      <file>${PROJECT_ROOT}/liblsl-Matlab/bin/lsl_get_created_at.mexmaci64</file>
+      <file>${PROJECT_ROOT}/liblsl-Matlab/bin/lsl_get_desc.mexmaci64</file>
+      <file>${PROJECT_ROOT}/liblsl-Matlab/bin/lsl_get_fullinfo.mexmaci64</file>
+      <file>${PROJECT_ROOT}/liblsl-Matlab/bin/lsl_get_hostname.mexmaci64</file>
+      <file>${PROJECT_ROOT}/liblsl-Matlab/bin/lsl_get_info.mexmaci64</file>
+      <file>${PROJECT_ROOT}/liblsl-Matlab/bin/lsl_get_name.mexmaci64</file>
+      <file>${PROJECT_ROOT}/liblsl-Matlab/bin/lsl_get_nominal_srate.mexmaci64</file>
+      <file>${PROJECT_ROOT}/liblsl-Matlab/bin/lsl_get_session_id.mexmaci64</file>
+      <file>${PROJECT_ROOT}/liblsl-Matlab/bin/lsl_get_source_id.mexmaci64</file>
+      <file>${PROJECT_ROOT}/liblsl-Matlab/bin/lsl_get_type.mexmaci64</file>
+      <file>${PROJECT_ROOT}/liblsl-Matlab/bin/lsl_get_uid.mexmaci64</file>
+      <file>${PROJECT_ROOT}/liblsl-Matlab/bin/lsl_get_version.mexmaci64</file>
+      <file>${PROJECT_ROOT}/liblsl-Matlab/bin/lsl_get_xml.mexmaci64</file>
+      <file>${PROJECT_ROOT}/liblsl-Matlab/bin/lsl_have_consumers.mexmaci64</file>
+      <file>${PROJECT_ROOT}/liblsl-Matlab/bin/lsl_is_text.mexmaci64</file>
+      <file>${PROJECT_ROOT}/liblsl-Matlab/bin/lsl_last_child.mexmaci64</file>
+      <file>${PROJECT_ROOT}/liblsl-Matlab/bin/lsl_library_version.mexmaci64</file>
+      <file>${PROJECT_ROOT}/liblsl-Matlab/bin/lsl_loadlib_.mexmaci64</file>
+      <file>${PROJECT_ROOT}/liblsl-Matlab/bin/lsl_local_clock.mexmaci64</file>
+      <file>${PROJECT_ROOT}/liblsl-Matlab/bin/lsl_name.mexmaci64</file>
+      <file>${PROJECT_ROOT}/liblsl-Matlab/bin/lsl_next_sibling.mexmaci64</file>
+      <file>${PROJECT_ROOT}/liblsl-Matlab/bin/lsl_next_sibling_n.mexmaci64</file>
+      <file>${PROJECT_ROOT}/liblsl-Matlab/bin/lsl_open_stream.mexmaci64</file>
+      <file>${PROJECT_ROOT}/liblsl-Matlab/bin/lsl_parent.mexmaci64</file>
+      <file>${PROJECT_ROOT}/liblsl-Matlab/bin/lsl_prepend_child.mexmaci64</file>
+      <file>${PROJECT_ROOT}/liblsl-Matlab/bin/lsl_prepend_child_value.mexmaci64</file>
+      <file>${PROJECT_ROOT}/liblsl-Matlab/bin/lsl_prepend_copy.mexmaci64</file>
+      <file>${PROJECT_ROOT}/liblsl-Matlab/bin/lsl_previous_sibling.mexmaci64</file>
+      <file>${PROJECT_ROOT}/liblsl-Matlab/bin/lsl_previous_sibling_n.mexmaci64</file>
+      <file>${PROJECT_ROOT}/liblsl-Matlab/bin/lsl_protocol_version.mexmaci64</file>
+      <file>${PROJECT_ROOT}/liblsl-Matlab/bin/lsl_pull_chunk_d.mexmaci64</file>
+      <file>${PROJECT_ROOT}/liblsl-Matlab/bin/lsl_pull_sample_buf.mexmaci64</file>
+      <file>${PROJECT_ROOT}/liblsl-Matlab/bin/lsl_pull_sample_d.mexmaci64</file>
+      <file>${PROJECT_ROOT}/liblsl-Matlab/bin/lsl_pull_sample_str.mexmaci64</file>
+      <file>${PROJECT_ROOT}/liblsl-Matlab/bin/lsl_push_chunk.mexmaci64</file>
+      <file>${PROJECT_ROOT}/liblsl-Matlab/bin/lsl_push_sample.mexmaci64</file>
+      <file>${PROJECT_ROOT}/liblsl-Matlab/bin/lsl_remove_child.mexmaci64</file>
+      <file>${PROJECT_ROOT}/liblsl-Matlab/bin/lsl_remove_child_n.mexmaci64</file>
+      <file>${PROJECT_ROOT}/liblsl-Matlab/bin/lsl_resolve_all_.mexmaci64</file>
+      <file>${PROJECT_ROOT}/liblsl-Matlab/bin/lsl_resolve_bypred_.mexmaci64</file>
+      <file>${PROJECT_ROOT}/liblsl-Matlab/bin/lsl_resolve_byprop_.mexmaci64</file>
+      <file>${PROJECT_ROOT}/liblsl-Matlab/bin/lsl_samples_available.mexmaci64</file>
+      <file>${PROJECT_ROOT}/liblsl-Matlab/bin/lsl_set_child_value.mexmaci64</file>
+      <file>${PROJECT_ROOT}/liblsl-Matlab/bin/lsl_set_name.mexmaci64</file>
+      <file>${PROJECT_ROOT}/liblsl-Matlab/bin/lsl_set_postprocessing.mexmaci64</file>
+      <file>${PROJECT_ROOT}/liblsl-Matlab/bin/lsl_set_value.mexmaci64</file>
+      <file>${PROJECT_ROOT}/liblsl-Matlab/bin/lsl_time_correction.mexmaci64</file>
+      <file>${PROJECT_ROOT}/liblsl-Matlab/bin/lsl_value.mexmaci64</file>
+      <file>${PROJECT_ROOT}/liblsl-Matlab/bin/lsl_wait_for_consumers.mexmaci64</file>
+    </fileset.resources>
+    <fileset.package />
+    <fileset.depfun>
+      <file>${PROJECT_ROOT}/eeg_emptyset.m</file>
+      <file>${PROJECT_ROOT}/floatread.m</file>
+      <file>${PROJECT_ROOT}/nfblab_badchans.m</file>
+      <file>${PROJECT_ROOT}/nfblab_cleanup.m</file>
+      <file>${PROJECT_ROOT}/nfblab_epochcheck.m</file>
+      <file>${PROJECT_ROOT}/nfblab_epochersp.m</file>
+      <file>${PROJECT_ROOT}/nfblab_epochprocess.m</file>
+      <file>${PROJECT_ROOT}/nfblab_findlslstream.m</file>
+      <file>${PROJECT_ROOT}/nfblab_ica.m</file>
+      <file>${PROJECT_ROOT}/nfblab_interp.m</file>
+      <file>${PROJECT_ROOT}/nfblab_loadasr.m</file>
+      <file>${PROJECT_ROOT}/nfblab_loadfile.m</file>
+      <file>${PROJECT_ROOT}/nfblab_process.m</file>
+      <file>${PROJECT_ROOT}/nfblab_saveset.m</file>
+      <file>${PROJECT_ROOT}/nfblab_setfields.m</file>
+      <file>${PROJECT_ROOT}/nfblab_zscore.m</file>
+    </fileset.depfun>
+    <build-deliverables>
+      <file location="${PROJECT_ROOT}/nfblab_cyton/for_testing" name="nfblab_cyton.app" optional="false">/System/Volumes/Data/data/curtis/NTL-EEGLAB/ntl_prediction/neurofeedbacklab/src/nfblab_cyton/for_testing/nfblab_cyton.app</file>
+      <file location="${PROJECT_ROOT}/nfblab_cyton/for_testing" name="run_nfblab_cyton.sh" optional="false">/System/Volumes/Data/data/curtis/NTL-EEGLAB/ntl_prediction/neurofeedbacklab/src/nfblab_cyton/for_testing/run_nfblab_cyton.sh</file>
+      <file location="${PROJECT_ROOT}/nfblab_cyton/for_testing" name="readme.txt" optional="true">/System/Volumes/Data/data/curtis/NTL-EEGLAB/ntl_prediction/neurofeedbacklab/src/nfblab_cyton/for_testing/readme.txt</file>
+      <file location="${PROJECT_ROOT}/nfblab_cyton/for_testing" name="splash.png" optional="false">/System/Volumes/Data/data/curtis/NTL-EEGLAB/ntl_prediction/neurofeedbacklab/src/nfblab_cyton/for_testing/splash.png</file>
+    </build-deliverables>
+    <workflow />
+    <matlab>
+      <root>/Applications/MATLAB_R2021b.app</root>
+      <toolboxes>
+        <toolbox name="neuralnetwork" />
+      </toolboxes>
+      <toolbox>
+        <neuralnetwork>
+          <enabled>true</enabled>
+        </neuralnetwork>
+      </toolbox>
+    </matlab>
+    <platform>
+      <unix>true</unix>
+      <mac>true</mac>
+      <windows>false</windows>
+      <win2k>false</win2k>
+      <winxp>false</winxp>
+      <vista>false</vista>
+      <linux>false</linux>
+      <solaris>false</solaris>
+      <osver>12.2.1</osver>
+      <os32>false</os32>
+      <os64>true</os64>
+      <arch>maci64</arch>
+      <matlab>true</matlab>
+    </platform>
+  </configuration>
+</deployment-project>
