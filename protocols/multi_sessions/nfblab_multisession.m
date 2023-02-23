@@ -7,6 +7,7 @@ disp('THIS PROGRAM MIGHT STILL BE FUNCTIONAL')
 disp('BUT IT HAS NOT BEEN MAINTAINED')
 disp('************************************************');
 
+addpath(fullfile(pwd, '..','..'));
 currentp = which('nfblab_process.m');
 cd(fileparts(currentp));
 

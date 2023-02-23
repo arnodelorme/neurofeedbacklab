@@ -1,5 +1,9 @@
-% Run nfblab for MUSE using psychotoolbox visual feedback
+% Run nfblab for MUSE using psychotoolbox for visual feedback
+% The psychophysics toolbox need to be installed
+% The color of a square changes based on theta power
 % -------------------------------------------------------
+addpath(fullfile(pwd, '..','..'));
+
 options = { ...
     'chans'                  [1:4] ...
     'chanmask'               eye(4) ...

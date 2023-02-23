@@ -1,3 +1,7 @@
+% This script implement a simple GUI for NeuroFeedbackLab
+% By default it runs with an offline file, but toggle the
+% flag to false below to run it with LSL
+
 testOffline = true; % switch to false to run with LSL
 
 addpath(fullfile(pwd, '..','..'));

@@ -1,5 +1,6 @@
-% Run nfblab for any headset
-% --------------------
+% Run nfblab for any headset which has LSL
+% ----------------------------------------
+addpath(fullfile(pwd, '..','..'));
 nChan = 4; % number of channels
 sRate = 250; % sampling rate
 
