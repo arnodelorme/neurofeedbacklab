@@ -9,4 +9,5 @@ function state = nfblab_feedback_simpleplot(state, feedbackVal, chunkPower, chun
     else
         plot(chunkPower(chunkIndex-20:chunkIndex-1));
     end
+    
     title('Spectral power');

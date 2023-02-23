@@ -86,7 +86,7 @@ function nfblab_process(varargin)
 
 if ~exist('nfblab_setfields', 'file')
     [filePath,~] = fileparts(which('nfblab_process'));
-    addpath(fullfile(filePath), 'src')
+    addpath(fullfile(filePath, 'src'));
 end
 
 % get current commit (will be saved along with the data
@@ -261,7 +261,7 @@ while 1
     
     % wait for first command
     if verbose > 0
-        fprintf('Feedback %s sent to client\n',currentMsg);
+        fprintf('Feedback %s sent to client (if any)\n',currentMsg);
     end
     if g.session.TCPIP
         structResp = '';
@@ -299,11 +299,11 @@ while 1
                 end
             end
         end
+    elseif ~isempty(g.session.checkglobalmsg)
+        drawnow;
+        structResp = evalin('base', g.session.checkglobalmsg);
+        evalin('base', [ g.session.checkglobalmsg '.command = [];' g.session.checkglobalmsg '.options = [];' ]);
     else
-        if ~isempty(g.session.checkglobalmsg)
-            msgTmp = evalin('base', g.session.checkglobalmsg);
-            evalin('base', [ g.session.checkglobalmsg ' = [];' ]);
-        end
         structResp = msg(iMsg);
         iMsg = iMsg + 1;
     end
@@ -735,7 +735,7 @@ while 1
                 else
                     chunkFeedback(chunkCount) = feedbackVal;
                 end
-                feedbackVal = chunkCount+1;
+                chunkCount = chunkCount+1;
                 
                 % output message through TCP/IP
                 tcpipmsg             = results;

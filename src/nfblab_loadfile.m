@@ -9,7 +9,8 @@ function [streamFileData, chanlocs] = nfblab_loadfile(streamFile)
             streamFileData = load('-mat', streamFile);
             streamFileData = streamFileData.EEG;
             if ischar(streamFileData.data)
-                streamFileData.data = floatread(streamFileData.data, [streamFileData.nbchan Inf]);
+                filePath = fileparts(streamFile);
+                streamFileData.data = floatread(fullfile(filePath, streamFileData.data), [streamFileData.nbchan Inf]);
             end
         elseif strcmpi(ext, '.edf')
             streamFileData = pop_biosig(streamFile);

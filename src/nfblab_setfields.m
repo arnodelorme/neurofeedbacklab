@@ -74,6 +74,7 @@ allowedFields = {
     'feedback'  'funcinit'       ''        'Feedback output initialization function.';
     'feedback'  'funcfeedback'   'nfblab_feedback_simpleplot'        'Feedback output (audio, visualization) function (takes one feedback parameter as input). Default is to plot power.';
     'feedback'  'funcend'        ''        'Feedback output termination function.';
+    'feedback'  'simplePlot'     true      ''; % legacy
     ...
     'custom'    'field'          ''        ''
     'custom'    'func'           ''        ''
