@@ -88,6 +88,10 @@ if ~exist('nfblab_setfields', 'file')
     [filePath,~] = fileparts(which('nfblab_process'));
     addpath(fullfile(filePath, 'src'));
 end
+if ~exist('pop_loadset', 'file')
+    eeglab; % add paths
+    close;
+end
 
 % get current commit (will be saved along with the data
 tmpcommit = nfblab_version;

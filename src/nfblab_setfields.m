@@ -27,8 +27,9 @@ allowedFields = {
     'input'     'lslname'        ''      'This is the name of the stream that shows in Lab Recorder.';
     'input'     'chans'          []      'Indices of data channels to process. Default is [] or all.';
     'input'     'srate'          250     'Sampling rate';
+    'input'     'chanlocs'       []      'Optional channel location for bad channel rejection and ICLabel';
     'input'     'srateHardware'  ''      'Sampling rate of the hardware (will default to sampling rate above if empty). Use a multiple to downsample the data (e.g. with 500, every other sample is ignored).';
-    'input'     'windowSize'     250     'Length of window size for FFT (if equal to srate then 1 second).';
+    'input'     'windowSize'     []      'Length of window size for FFT (by default empty and set equal to srate, so 1 second).';
     'input'     'windowInc'      0.25    'Window increment/frequency of feedback in fraction of second or samples, default is 0.25 second.';
     'input'     'chanmask'       []      'Spatial filter for feedback (one row per channel). For example [1 -1; 0 0] will compute channel 1 minus 2. Default is "eye" or square matrix with ones on the diagonal ([1 0; 0 1] for 2 channels).';
     'input'     'chanlabels'     ''      '';
