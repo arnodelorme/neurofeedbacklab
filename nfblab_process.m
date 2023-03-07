@@ -58,7 +58,7 @@
 %    to know what the commands are:
 %
 %    'lslconnect' - connect to LSL stream (based on parameters provided as input)
-%    'disconnect' - disconnect from LSL stream
+%    'disconnect' - disconnect from TCP/IP and wait for new connection
 %    'start'      - start streaming
 %    'stop'       - stop streaming (can be resumed by starting to stream again)
 %    'quit'       - quit program
@@ -354,17 +354,19 @@ while 1
         
         if strcmpi(structResp.command, 'lslconnect')
             % instantiate the LSL library
-            disp('Loading the library...');
-            lib = lsl_loadlib();
-            
-            % resolve a stream...
-            disp('Resolving an EEG stream...');
-            result = {};
-            result = nfblab_findlslstream(lib,g.input.lsltype,g.input.lslname);
-            disp('Opening an inlet...');
-            inlet = lsl_inlet(result{1});
-            disp('Now receiving chunked data...');
-            
+            if isempty(inlet)
+                disp('Loading the library...');
+                lib = lsl_loadlib();
+                
+                % resolve a stream...
+                disp('Resolving an EEG stream...');
+                result = {};
+                result = nfblab_findlslstream(lib,g.input.lsltype,g.input.lslname);
+                disp('Opening an inlet...');
+                inlet = lsl_inlet(result{1});
+                disp('Now receiving chunked data...');
+            end
+
         elseif strcmpi(structResp.command, 'start')
             chunkCount = 1; % restart all counters
             fprintf('Starting new session...\n', g.session.fileNameAsr);
