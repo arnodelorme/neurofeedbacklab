@@ -120,7 +120,11 @@ for iField = 1:length(paramsFields)
             error('');
         end
     else
-        error('Unknown option %s', paramsFields{iField})
+        if ~contains(paramsFields{iField}, 'custom')
+            error('Unknown option %s', paramsFields{iField})
+        else
+            g.custom.(paramsFields{iField}) = params.(paramsFields{iField});
+        end
     end
 end
 

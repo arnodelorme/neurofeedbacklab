@@ -439,6 +439,9 @@ while 1
             end
             if ~isempty(fidRaw), fclose(fidRaw); fidRaw = []; end
             break;
+        elseif strcmpi(structResp.command, 'reinitfeedback')
+            fprintf('Reinitializing feedback...\n');
+            feedbackFuncStruct = feval(g.feedback.funcinit, structResp.options);
         elseif strcmpi(structResp.command, 'disconnect')
             fprintf('Disconnecting...\n');
             if g.session.TCPIP
