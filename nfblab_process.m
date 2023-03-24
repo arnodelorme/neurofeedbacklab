@@ -545,7 +545,7 @@ while 1
             end
             
             % interpolate channels
-            if g.preproc.badchanFlag && ~strcmpi(g.session.runmode, 'baseline')
+            if g.preproc.badchanFlag && ~strcmpi(g.session.runmode, 'baseline') && ~isempty(g.input.chanlocs)
                 chunkFilt(nonEventChans,:) = nfblab_interp(chunkFilt(nonEventChans,:), g.input.chanlocs, g.preproc.badChans);
             end
             
