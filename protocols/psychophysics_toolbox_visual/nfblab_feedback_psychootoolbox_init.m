@@ -1,6 +1,9 @@
 % a simple function to provide visual feedback on spectral power
+% need to be executed as a script
 
-function state = nfblab_feedback_psychootoolbox_init(varargin)
+%function  feedbackFuncStruct = nfblab_feedback_psychootoolbox_init(varargin)
+
+% tested with Psychtoolbox-3-3.0.19.0
 
 % check psychopyshics toolbox
 % ---------------------------
@@ -16,12 +19,13 @@ screenid = 0; % 1 = external screen
 %Screen('Preference', 'VBLTimestampingMode', 1);
 displaysize=Screen('Rect', screenid);
 displaysize=[0 0 800 600];
-state.window = Screen('OpenWindow', 0, 255, displaysize);%, [], [], [], [], imaging);
-Screen('TextFont', window, 'Arial');
-Screen('TextSize', window, 16);
-Screen('TextStyle', window, 1);
-state.xpos1 = 200;
-state.ypos1 = 100;
-state.xpos2 = displaysize(3)-xpos1;
-state.ypos2 = displaysize(4)-ypos1;
-state.colArray = [ [10:250] [250:-1:128] [128:250] ];
+feedbackFuncStruct.window = Screen('OpenWindow', 0, 255, displaysize);%, [], [], [], [], imaging);
+feedbackFuncStruct.window
+Screen('TextFont',  feedbackFuncStruct.window, 'Arial');
+Screen('TextSize',  feedbackFuncStruct.window, 16);
+Screen('TextStyle',  feedbackFuncStruct.window, 1);
+feedbackFuncStruct.xpos1 = 200;
+feedbackFuncStruct.ypos1 = 100;
+feedbackFuncStruct.xpos2 = displaysize(3)- feedbackFuncStruct.xpos1;
+feedbackFuncStruct.ypos2 = displaysize(4)- feedbackFuncStruct.ypos1;
+feedbackFuncStruct.colArray = [ [10:250] [250:-1:128] [128:250] ];

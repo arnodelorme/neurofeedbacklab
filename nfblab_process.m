@@ -244,7 +244,12 @@ warning('off', 'MATLAB:subscripting:noSubscriptsSpecified'); % for ASR
 % initialize feedback
 % -------------------
 if ~isempty(g.feedback.funcinit)
-    feedbackFuncStruct = feval(g.feedback.funcinit, g);
+    try
+        feedbackFuncStruct = feval(g.feedback.funcinit, g);
+    catch
+        fprintf(2, 'Could not execute feedback function, try running it as a script\n');
+        eval(g.feedback.funcinit);
+    end
 else
     feedbackFuncStruct = [];
 end

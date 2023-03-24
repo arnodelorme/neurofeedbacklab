@@ -1,5 +1,7 @@
 % a simple function to provide visual feedback on spectral power
 
+% tested with Psychtoolbox-3-3.0.19.0
+
 function state = nfblab_feedback_psychootoolbox_process(state, feedbackVal, varargin)
 
 colIndx = ceil((feedbackVal+0.001)*254);
