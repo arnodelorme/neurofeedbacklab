@@ -121,7 +121,11 @@ for iField = 1:length(paramsFields)
         end
     else
         if ~contains(paramsFields{iField}, 'custom')
-            error('Unknown option %s', paramsFields{iField})
+            if ~isempty(g.custom.field) && isequal(paramsFields{iField}, g.custom.field)
+                disp('Custom field detected, ignoring its content')
+            else
+                error('Unknown option %s', paramsFields{iField})
+            end
         else
             g.custom.(paramsFields{iField}) = params.(paramsFields{iField});
         end
