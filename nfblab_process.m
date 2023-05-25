@@ -100,7 +100,9 @@ fprintf('**********************\n')
 fprintf('** NEUROFEEDBACKLAB **\n')
 fprintf('**********************\n')
 fprintf('**********************\n')
-fprintf('\nVersion: %s (git commit)\n\n', tmpcommit(1:8))
+if ~isempty(tmpcommit)
+    fprintf('\nVersion: %s (git commit)\n\n', tmpcommit(1:8))
+end
 fprintf('Type "help nfblab_process" for basic parameter help\n');
 fprintf('Type "nfblab_process(''help'', true)" for more advanced parameter help\n');
 fprintf('Refer to online documentation and protocols for more information.\n\n');
