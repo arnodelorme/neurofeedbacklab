@@ -1,13 +1,77 @@
-% nfblab_process() - function to perform neurofeedback using LSL steams,
-%                    and the psychophysics toolbox. Support ICA component
-%                    spatial filtering.
-%
+% nfblab_process() - function to perform Neurofeedback using LSL steams. 
+%                    Support ICA components, spatial filtering, ERP extraction 
+%                    (beta), eLoreta (beta), zscore (beta), audio and
+%                    visual feeback, etc...
 % Usage:
 %    nfblab_process(key, val, ...)
+%    nfblab_process('help', true)
 %
-% Parameters. Type nfblab_process(help, true) for help on parameters.
-
-
+% Type nfblab_process('help', true) for help on parameters.
+%
+% Parameter 'chanmask':
+% This parameter determines your spacial filter with one row per channel.
+% For example, if you have 3 channels Fz, Pz, and Cz, and want to compute
+% Fz-Cz and Pz-Cz, the matrix would look like [1 0 -1; 0 1 -1]. The default
+% parameter is identity (eye() MATLAB function) where each EEG channel is 
+% transformed to itself.
+%
+% Parameter 'freqrange':
+% This defines your frequency range of interest. Default is theta, but you
+% may calculate multiple ones, for example { [3.5 6.5] [8 12] } will
+% calculate theta and alpha.
+%
+% Parameter 'freqprocess':
+% This defines how to calculate the spectral parameter to use for feedback.
+% This is a function that takes as input a matrix of size 'chanmask' rows
+% by 'freqrange' columns. If 'chanmask' is [1 0 -1; 0 1 -1] and 'freqrange'
+% is { [3.5 6.5] } (theta), the input matrix is 2 x 1. For example the
+% function param.theta = @(x)x(1) will use for feedback theta power of the first
+% output of 'chanmask'. Function @(x)x(1)/x(2) will use for feedback the ratio of 
+% theta power between the two output of 'chanmask'. 
+% If 'freqrange' contains theta and alpha { [3.5 6.5] [8 12] }, then it is
+% possible to calculate the ratio of theta over alpha of the first channel
+% using param.alphabytheta = @(x)x(1,1)/x(1,2). If 'chanmask' contains spatial
+% filter weights for ICA components, then it is possible to provide feedback 
+% based on ICA component spectral power.
+%
+% Parameter 'runmode':
+% One of the most important parameters is 'runmode' which can be 'trial' or 
+% 'baseline'. A baseline must be run at the beginning to assess baseline 
+% values and ASR rejection thresholds or ICA. 'runmode' can also be 'slave'
+% if nfblab_process is controled through TCP/IP communication.
+%
+% Parameter 'feedbackmode':
+% Another important parameter is 'feedbackmode' which can be 
+% 'dynrange' dynamical range or 'threshold' mode. The threshold mode simply 
+% involves activity going above or below a threshold and parameter for how this
+% threshold evolves. The output is binary. In the dynamic range mode, the output 
+% is continuous between 0 and 1. There are multiple parameters to control how 
+% these values change through time but you must choose one mode ('dynrange' or 
+% 'threshold') as the two modes are mutually exclusive.
+%
+% Commands:
+%    About 4 times per second (depending on settings), this function
+%    process commands. These commands may contain options. You should not
+%    need to worry about sending commands because the sequence of commands
+%    is automatically determined by your parameters. However, in specific
+%    cases, such as TCP/IP communication or GUI communication, it is good
+%    to know what the commands are:
+%
+%    'lslconnect' - connect to LSL stream (based on parameters provided as input)
+%    'disconnect' - disconnect from TCP/IP and wait for new connection
+%    'start'      - start streaming
+%    'stop'       - stop streaming (can be resumed by starting to stream again)
+%    'quit'       - quit program
+%
+%    When nfblab_process is controlled by TCP/IP see "tcpip_control_and_feedback_stream"
+%    protocol, the commands are passed as JSON strings, which contain a
+%    "command" and an "option" key. See nfblab_process('help', true) for the list 
+%    of options.
+% 
+%    When nfblab_process is controlled by a Graphic User Interface -- see "simple_gui"
+%    protocol -- the commands are passed as a variable in the global workspace
+%    ('checkglobalmsg' parameter) with a "command" and an "option" field. 
+%    See nfblab_process('help', true) for the list of options.
 
 % this is the name of the stream that shows in Lab Recorder
 % if empty, it will only use the type above
@@ -15,57 +79,46 @@
 % to connect to the stream. If you cannot connect
 % nfblab won't be able to connect either.
 
-% sessions parameters for baseline and actual session in second
-% baseline only need to be run once to set ASR filter parameters
-% if not using ASR, baseline can be skipped
-
-
-% Threshold mode. The threshold mode simply involve
-% activity going above or below a threshold and parameter for how this
-% threshold evolve. The output is binary. 
-
-% Dynamic range mode. In this mode, the output is continuous
-% between 0 and 1 (position in the range). Parameters dynRange, 
-% dynRangeDec, dynRangeInc  how the range
-
-
-%
-%  'runmode' - 'trial' or 'baseline' a baseline must be run at the
-%              beginning to assess baseline values and ASR rejection
-%              thresholds
-%  'fileNameAsr' - [string] in baseline mode, this file is writen. In trial
-%              mode, it is read. Default is 'asr_baseline.mat'. Note that
-%              this file might not exist if this is the first time you
-%              are starting the program. In this case, you need to run
-%              baseline session first.
-%  'fileNameOut' - [string] output file name. Default is
-%              'session-datexxxxx.mat'. In this file all the information is
-%               being saved after a session.
-%  'fileNameOut' - [string] output file name. Default is
-%              'session-datexxxxx.mat'. In this file all the information is
-%               being saved after a session.
-%  'chans'     - [array] channels to take into account. For example [1]
-%               uses the first channel only (with the default reference).
-%               To use a bipolar montage, select two channels here and a
-%               chanmask below. To select a spatial filter such as ICA
-%               select all channels and use ICA component topography as
-%               mask.
-%  'chanmask'  - [array] channel mask. For a bipolar montage, use [1 -1]
-%               for example. For a single channel, use [1].
-%  'freqrange' - [min max] frequency range in Hz. See nfblab_options for
-%               default value.
-
 % NOTE:
 % - remove "addfreqprocess"
 
 function nfblab_process(varargin)
 
+if ~exist('nfblab_setfields', 'file')
+    [filePath,~] = fileparts(which('nfblab_process'));
+    addpath(fullfile(filePath, 'src'));
+end
+if ~exist('pop_loadset', 'file')
+    eeglab; % add paths
+    close;
+end
+
+% get current commit (will be saved along with the data
+tmpcommit = nfblab_version;
+fprintf('\n**********************\n')
+fprintf('**********************\n')
+fprintf('** NEUROFEEDBACKLAB **\n')
+fprintf('**********************\n')
+fprintf('**********************\n')
+if ~isempty(tmpcommit)
+    fprintf('\nVersion: %s (git commit)\n\n', tmpcommit(1:8))
+end
+fprintf('Type "help nfblab_process" for basic parameter help\n');
+fprintf('Type "nfblab_process(''help'', true)" for more advanced parameter help\n');
+fprintf('Refer to online documentation and protocols for more information.\n\n');
+
 g = nfblab_setfields([], varargin{:});
 if isempty(g), return; end
 
+g.commit = tmpcommit;
+
 if isfield(g.feedback, 'diary') && ~strcmpi(g.feedback.diary, 'off')
     dateTmp = datestr(now, 30);
-    diary([ 'nfblab_log_' dateTmp '.txt']);
+    if isempty(g.feedback.diary)
+        diary([ 'nfblab_log_' dateTmp '.txt']);
+    else
+        diary(g.feedback.diary);
+    end
 end
 
 % g.session.runmode = [];
@@ -135,7 +188,7 @@ elseif strcmpi(g.session.runmode, 'baseline')
     iMsg = 1;
 elseif strcmpi(g.session.runmode, 'trial')
     if isequal(g.session.fileNameAsrDefault, g.session.fileNameAsr) && (g.preproc.asrFlag || g.preproc.icaFlag || g.preproc.badchanFlag)
-        asrFiles = dir('asr_filter_*.mat');
+        asrFiles = dir('*asr_filter*.mat');
         if isempty(asrFiles)
             error('No baseline file found in current folder, run baseline first');
         else
@@ -190,26 +243,17 @@ chunkThreshold = zeros(1, g.session.sessionDuration*chunkPerSec);
 chunkCount    = 1;
 warning('off', 'MATLAB:subscripting:noSubscriptsSpecified'); % for ASR
 
-% create screen psycho toolbox
-% ----------------------------
-if g.feedback.psychoToolbox
-    Screen('Preference', 'SkipSyncTests', 1);
-    screenid = 0; % 1 = external screen
-    %Screen('resolution', screenid, 800, 600, 60);
-    
-    %imaging = kPsychNeedFastBackingStore;
-    %Screen('Preference', 'VBLTimestampingMode', 1);
-    displaysize=Screen('Rect', screenid);
-    displaysize=[0 0 800 600];
-    window=Screen('OpenWindow', 0, 255, displaysize);%, [], [], [], [], imaging);
-    Screen('TextFont', window, 'Arial');
-    Screen('TextSize', window, 16);
-    Screen('TextStyle', window, 1);
-    xpos1 = 200;
-    ypos1 = 100;
-    xpos2 = displaysize(3)-xpos1;
-    ypos2 = displaysize(4)-ypos1;
-    colArray = [ [10:250] [250:-1:128] [128:250] ];
+% initialize feedback
+% -------------------
+if ~isempty(g.feedback.funcinit)
+    try
+        feedbackFuncStruct = feval(g.feedback.funcinit, g);
+    catch
+        fprintf(2, 'Could not execute feedback function, try running it as a script\n');
+        eval(g.feedback.funcinit);
+    end
+else
+    feedbackFuncStruct = [];
 end
 
 currentMode = 'pause';
@@ -228,7 +272,7 @@ while 1
     
     % wait for first command
     if verbose > 0
-        fprintf('Feedback %s sent to client\n',currentMsg);
+        fprintf('Feedback %s sent to client (if any)\n',currentMsg);
     end
     if g.session.TCPIP
         structResp = '';
@@ -266,6 +310,10 @@ while 1
                 end
             end
         end
+    elseif ~isempty(g.session.checkglobalmsg)
+        drawnow;
+        structResp = evalin('base', g.session.checkglobalmsg);
+        evalin('base', [ g.session.checkglobalmsg '.command = [];' g.session.checkglobalmsg '.options = [];' ]);
     else
         structResp = msg(iMsg);
         iMsg = iMsg + 1;
@@ -313,17 +361,19 @@ while 1
         
         if strcmpi(structResp.command, 'lslconnect')
             % instantiate the LSL library
-            disp('Loading the library...');
-            lib = lsl_loadlib();
-            
-            % resolve a stream...
-            disp('Resolving an EEG stream...');
-            result = {};
-            result = nfblab_findlslstream(lib,g.input.lsltype,g.input.lslname);
-            disp('Opening an inlet...');
-            inlet = lsl_inlet(result{1});
-            disp('Now receiving chunked data...');
-            
+            if isempty(inlet)
+                disp('Loading the library...');
+                lib = lsl_loadlib();
+                
+                % resolve a stream...
+                disp('Resolving an EEG stream...');
+                result = {};
+                result = nfblab_findlslstream(lib,g.input.lsltype,g.input.lslname);
+                disp('Opening an inlet...');
+                inlet = lsl_inlet(result{1});
+                disp('Now receiving chunked data...');
+            end
+
         elseif strcmpi(structResp.command, 'start')
             chunkCount = 1; % restart all counters
             fprintf('Starting new session...\n', g.session.fileNameAsr);
@@ -396,6 +446,9 @@ while 1
             end
             if ~isempty(fidRaw), fclose(fidRaw); fidRaw = []; end
             break;
+        elseif strcmpi(structResp.command, 'reinitfeedback')
+            fprintf('Reinitializing feedback...\n');
+            feedbackFuncStruct = feval(g.feedback.funcinit, structResp.options);
         elseif strcmpi(structResp.command, 'disconnect')
             fprintf('Disconnecting...\n');
             if g.session.TCPIP
@@ -419,7 +472,7 @@ while 1
         EEG.nbchan = length(g.input.chans);
         EEG.srate  = g.input.srate;
         EEG.xmin   = 0;
-        if isfield(g.input, 'chanlocs')
+        if isfield(g.input, 'chanlocs') && ~isempty(g.input.chanlocs)
             EEG.chanlocs = g.input.chanlocs(g.input.chans); % required for Loreta
         else
             EEG.chanlocs = [];
@@ -494,7 +547,7 @@ while 1
             end
             
             % interpolate channels
-            if g.preproc.badchanFlag && ~strcmpi(g.session.runmode, 'baseline')
+            if g.preproc.badchanFlag && ~strcmpi(g.session.runmode, 'baseline') && ~isempty(g.input.chanlocs)
                 chunkFilt(nonEventChans,:) = nfblab_interp(chunkFilt(nonEventChans,:), g.input.chanlocs, g.preproc.badChans);
             end
             
@@ -711,30 +764,17 @@ while 1
                 
                 % visual output through psychoToolbox
                 if strcmpi(g.session.runmode, 'trial') 
-                    if g.feedback.simplePlot
-                        if chunkCount < 22
-                            tmpPower = chunkPower(1:20);
-                            tmpPower(tmpPower == 0) = NaN;
-                            plot(tmpPower);
-                        else
-                            plot(chunkPower(chunkCount-20:chunkCount-1));
-                        end
-                        title('Spectral power');
-                    end
-                	if g.feedback.psychoToolbox
-                        colIndx = ceil((feedbackVal+0.001)*254);
-                        Screen('FillPoly', window ,[0 0 colArray(colIndx)], [ xpos1 ypos1; xpos2 ypos1; xpos2 ypos2; xpos1 ypos2], 1);
-                        Screen('Flip', window);
+                    if ~isempty(g.feedback.funcfeedback)
+                        feedbackFuncStruct = feval( g.feedback.funcfeedback, feedbackFuncStruct, feedbackVal, chunkPower, chunkCount);
                     end
                 end
             end
         end
     end
-    
 end
 
-if g.feedback.psychoToolbox
-    Screen('Closeall');
+if ~isempty(g.feedback.funcend)
+    feval(g.feedback.funcend, feedbackFuncStruct);
 end
 
 function S = cpsd_welch(X,window,noverlap, nfft)

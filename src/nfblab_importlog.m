@@ -1,4 +1,5 @@
-% import nfblab_process log
+% import nfblab_process log from JSON file
+% useful to extract information
 
 function logData = nfblab_importlog(fileName)
 

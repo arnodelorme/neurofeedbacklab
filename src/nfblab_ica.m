@@ -1,5 +1,7 @@
 % nfblab_process support function to compute
-%  ICA and find artifactual components
+% ICA and find artifactual components
+%
+% This function is executed only once on the baseline data
 
 function [icaWeights, icaWinv, icaRmInd] = nfblab_ica(data, srate, chanlocs, nICA)
 

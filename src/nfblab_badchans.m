@@ -1,3 +1,8 @@
+% This function is called on the baseline file
+% to detect bad channels. Bad channels are stored
+% and then ignored in other sessions
+% Requires the badchanFlag to be set to true
+
 function badChans = nfblab_badchans(dataAccuFiltSave, srate, chanlocs, chancorr)
 
 EEG = eeg_emptyset;

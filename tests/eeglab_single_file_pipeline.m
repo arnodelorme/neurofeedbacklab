@@ -1,3 +1,6 @@
+% This is used to compare nfblab_batch_one_file.m with a standard 
+% EEGLAB pipeline and make sure the result is identical
+
 function [eegMeasure, spectrum] = eeglab_single_file_pipeline( fileName, varargin )
 
 fileNameOut = [ fileName(1:end-3) '_processed.set'];

@@ -1,3 +1,6 @@
+% Stand-alone function to import one of nfblab_process
+% output file as an EEGLAB dataset
+
 function EEG = nfblab_mat2eeg(fileName, field)
 
 if nargin < 2

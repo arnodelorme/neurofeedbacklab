@@ -1,3 +1,9 @@
+% Process data epochs
+% extract ERP within specific time window in real time and compute ERP amplitude
+% which is then used for feedback
+%
+% See nfblab_process options
+
 function [evt,epochFeedback] = nfblab_epochprocess(EEG, evt, verbose)
 
 if nargin < 3

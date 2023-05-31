@@ -5,12 +5,13 @@ Neurofeedbacklab is a neurofeedback software approach based on Matlab. It uses E
 # Dependencies
 
 - Matlab (including student versions)
-- EEGLAB from https://eeglab.org
+- EEGLAB version 2023.0 or later (might work with earlier version) from https://eeglab.org
   - clean_rawdata plugin to version 2.5 or later
   - PICARD plugin if you want to do real time Independent Component Analysis
   - ROICONNECT if you want to do real time eLoreta and connectivity analysis
 - LSL install released code from https://github.com/labstreaminglayer/liblsl-Matlab/releases
 - Matlab psychophysics toolbox http://psychtoolbox.org/ if you want visual feedback
+- Matlab Audio toolbox http://psychtoolbox.org/ if you want audio feedback
 
 See the [INSTALL.md](INSTALL.md) documentation.
 

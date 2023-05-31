@@ -1,5 +1,8 @@
-% Run nfblab for MUSE
-% --------------------
+% Run nfblab for an old MUSE device 
+% You device needs to stream on LSL
+% ---------------------------------
+addpath(fullfile(pwd, '..','..'));
+
 options = { ...
     'chans'                  [1:4] ...
     'chanmask'               eye(4) ...

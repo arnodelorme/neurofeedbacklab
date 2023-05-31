@@ -1,10 +1,14 @@
 disp('************************************************');
-disp('This program runs is designed to run multiple sessions')
+disp('This program runs is designed to run Neurofeedback on multiple sessions')
 disp('To run a single session, call nfblab_process')
+disp('THIS IS A LEGACY PROGRAM USE IN THIS PUBLICATION');
+disp('https://www.frontiersin.org/articles/10.3389/fnhum.2020.00246/full');
+disp('THIS PROGRAM MIGHT STILL BE FUNCTIONAL')
+disp('BUT IT HAS NOT BEEN MAINTAINED')
 disp('************************************************');
 
-nfblab_options;
-currentp = which('nfblab_run');
+addpath(fullfile(pwd, '..','..'));
+currentp = which('nfblab_process.m');
 cd(fileparts(currentp));
 
 % start BCILAB
@@ -19,19 +23,13 @@ if ~exist('asr_process') || ~exist('eeg_emptyset')
     end
 end
 
-% check psychopyshics toolbox
-% ---------------------------
-if psychoToolbox && ~exist('Screen')
-    error('Cannot find psychophysics toolbox - run "SetupPsychtoolbox" from the command line and try again');
-end
-
 % check LSL
 % ---------
 if ~exist('lsl_loadlib')
     error('Cannot find Lab Streaming Layer - make sure the liblsl-Matlab folder is in your path');
 else
-    lib = lsl_loadlib();
-    result = nfblab_findlslstream(lib,lsltype,lslname);
+    fprintf(2, 'Make sure your EEG device is streaming on LSL')
+    fprintf(2, 'If this program cannot find it, change the options when calling nfblab_process')
 end
 
 %% Subject name
@@ -47,14 +45,14 @@ end
 %    error([ 'This subject does not have a hashcode file' ]);
 %end;
 
-session = input('Neurofeedback session (1 to 9):');
+session = input('Neurofeedback session number on separate days (1 to 9):');
 if session < 1 || session > 12
     error('Session must be between 1 and 9')
 end
 
-trial = input('Neurofeedback trial (0 to 9 - 0 is baseline):');
+trial = input('Neurofeedback run number on the same day (0 to 9 - 0 is baseline):');
 if trial < 0 || trial > 10
-    error('Trial must be between 0 and 9')
+    error('Run must be between 0 and 9')
 end
 
 % scan all subjects in folder

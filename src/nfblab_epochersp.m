@@ -1,7 +1,10 @@
+% Compute and plot Event-Related spectral perturbation 
+% This is done by sending the neurofeedback command 'plotERSP'
+
 function nfblab_epochersp(evt, srate)
 
 if isempty(evt)
-    disp('No event channel, cannot plot ERSP');
+    disp('No event channel, cannot compute ERSP');
 else
     figure('position', [560   632   560   316], 'menubar', 'none', 'name', 'ERSP results', 'numbertitle', false);
     caxisval = [];
