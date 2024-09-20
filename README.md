@@ -7,8 +7,8 @@ Neurofeedbacklab is a neurofeedback software approach based on Matlab. It uses E
 - Matlab (including student versions)
 - EEGLAB version 2023.0 or later (might work with earlier version) from https://eeglab.org
   - clean_rawdata plugin to version 2.5 or later
-  - PICARD plugin if you want to do real time Independent Component Analysis
-  - ROICONNECT if you want to do real time eLoreta and connectivity analysis
+  - PICARD plugin if you want to do real-time Independent Component Analysis
+  - ROICONNECT if you want to do real-time eLoreta and connectivity analysis
 - LSL install released code from https://github.com/labstreaminglayer/liblsl-Matlab/releases
 - Matlab psychophysics toolbox http://psychtoolbox.org/ if you want visual feedback
 - Matlab Audio toolbox http://psychtoolbox.org/ if you want audio feedback
@@ -17,9 +17,9 @@ See the [INSTALL.md](INSTALL.md) documentation.
 
 # Features
 
-- Stream real time EEG signal using LSL and process it in real time
-- Compute measure of interest, provide visual feedback or stream results through TCP/IP connection to other program.
-- In a typical use, the same computer runs the data acquisition and performs visual feedback
+- Stream real-time EEG signal using LSL and process it in real time
+- Compute measure of interest, provide visual feedback, or stream results through TCP/IP connection to another program.
+- In typical use, the same computer runs the data acquisition and performs visual feedback
 - Adaptive filtering with minimum phase distortion
 - Automated artifact rejection using [Artifact Subspace Reconstruction](https://sccn.ucsd.edu/~scott/pdf/Mullen_BCI13.pdf). This methods uses PCA to find artifactual sections of data, then reconstruct a clean signal based on the statistics of the baseline. 
 - Apply spatial filter (including independent component analysis)
