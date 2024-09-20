@@ -224,7 +224,7 @@ dataAccuPointer = 1;
 feedbackVal    = 0.5;       % initial feedback value
 
 % create TCP/IP socket
-oldFeedback = 0;
+oldFeedback = g.feedback.initialvalue;
 if g.session.TCPIP
     if ~isnan(g.session.TCPport)
         kkSocket  = ServerSocket( g.session.TCPport );
@@ -240,6 +240,7 @@ chunkPower    = zeros(1, g.session.sessionDuration*chunkPerSec);
 chunkFeedback = zeros(1, g.session.sessionDuration*chunkPerSec);
 chunkDynRange = zeros(2, g.session.sessionDuration*chunkPerSec); % FIX THIS NOT INCREASED IN SIZE AND GENERATE CRASH WHEN SAVING BECAUSE OUT OF BOUND ARRAY
 chunkThreshold = zeros(1, g.session.sessionDuration*chunkPerSec);
+chunkResults  = cell(1, g.session.sessionDuration*chunkPerSec);
 chunkCount    = 1;
 warning('off', 'MATLAB:subscripting:noSubscriptsSpecified'); % for ASR
 
@@ -265,8 +266,9 @@ state  = [];
 eegPointer = 1; % for offline file
 
 % variables
-threshold = g.feedback.threshold;
-dynRange  = g.feedback.dynRange;
+threshold   = g.feedback.threshold;
+dynRange    = g.feedback.dynRange;
+firstSample = [];
 
 while 1
     
@@ -399,6 +401,7 @@ while 1
                 chunkMarkerSave    = chunkMarker(1:chunkCount-1);
                 chunkPowerSave     = chunkPower(1:chunkCount-1);
                 chunkFeedbackSave  = chunkFeedback(1:chunkCount-1);
+                chunkResultsSave   = chunkResults(1:chunkCount-1);
                 chunkDynRangeSave  = chunkDynRange(:,1:chunkCount-1);
                 chunkThresholdSave = chunkThreshold(1:chunkCount-1);
 
@@ -425,11 +428,11 @@ while 1
                     else
                         [icaWeights, icaWinv, icaRmInd] = deal([]);
                     end
-                    save('-mat', g.session.fileNameAsr, 'stateAsr', 'dynRange', 'dataAccuOriSave', 'dataAccuFiltSave', 'chunkMarkerSave', 'chunkPowerSave', 'chunkFeedbackSave', 'chunkDynRangeSave', 'chunkThresholdSave', 'icaWeights', 'icaWinv', 'icaRmInd', 'badChans', 'g');
+                    save('-mat', g.session.fileNameAsr, 'stateAsr', 'dynRange', 'dataAccuOriSave', 'dataAccuFiltSave', 'chunkMarkerSave', 'chunkPowerSave', 'chunkFeedbackSave', 'chunkResultsSave', 'chunkDynRangeSave', 'chunkThresholdSave', 'icaWeights', 'icaWinv', 'icaRmInd', 'badChans', 'g');
                     fprintf('Saving Baseline file %s\n', g.session.fileNameAsr);
                 else
                     % close text file
-                    save('-mat', g.session.fileNameOut, 'stateAsr', 'dynRange', 'dataAccuOriSave', 'dataAccuFiltSave', 'chunkMarkerSave', 'chunkPowerSave', 'chunkFeedbackSave', 'chunkDynRangeSave', 'chunkThresholdSave', 'g');
+                    save('-mat', g.session.fileNameOut, 'stateAsr', 'dynRange', 'dataAccuOriSave', 'dataAccuFiltSave', 'chunkMarkerSave', 'chunkPowerSave', 'chunkFeedbackSave', 'chunkResultsSave', 'chunkDynRangeSave', 'chunkThresholdSave', 'g');
                     fprintf('Saving file %s\n', g.session.fileNameOut);
                 end
 
@@ -541,7 +544,7 @@ while 1
 
             % remove fist sample
             if g.preproc.subFirstSample
-                if dataBufferPointer == 1
+                if dataBufferPointer == 1 && isempty(firstSample)
                     firstSample = chunk(:,1);
                 end
                 chunk = bsxfun(@minus, chunk, firstSample);
@@ -701,7 +704,18 @@ while 1
                 end
                 
                 if ~isinf(X)
-                    if strcmpi(g.feedback.feedbackMode, 'dynrange')
+                    if strcmpi(g.feedback.feedbackMode, 'bounded')
+                        Xbounded = normcdf(X);
+                        
+                        % dimming/brightening
+                        if Xbounded > oldFeedback
+                            feedbackVal = oldFeedback*g.feedback.boundedfactorh + Xbounded*(1-g.feedback.boundedfactorh); % high factor
+                        else
+                            feedbackVal = oldFeedback*g.feedback.boundedfactorl + Xbounded*(1-g.feedback.boundedfactorl); % low factor
+                        end
+                        feedbackVal = feedbackVal*(1-g.feedback.boundedfactorinc) + g.feedback.boundedfactorinc; % positive bias factor
+                        
+                    elseif strcmpi(g.feedback.feedbackMode, 'dynrange')
                         % assess if value position within a range
                         % and return output from 0 to 1
                         totalRange = dynRange(2)-dynRange(1);
@@ -761,7 +775,9 @@ while 1
                     chunkFeedback(chunkCount) = NaN;
                 else
                     chunkFeedback(chunkCount) = feedbackVal;
+                    chunkResults{chunkCount}  = results;
                 end
+                chunkResults{chunkCount}  = results;
                 chunkCount = chunkCount+1;
                 
                 % output message through TCP/IP
@@ -773,6 +789,10 @@ while 1
                 currentMsg = jsonencode(tcpipmsg);
                 oldFeedback = feedbackVal;
                 
+                if chunkCount > 16
+                    1+1; 
+                end
+
                 % visual output through psychoToolbox
                 if strcmpi(g.session.runmode, 'trial') 
                     if ~isempty(g.feedback.funcfeedback)

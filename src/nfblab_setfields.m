@@ -35,7 +35,7 @@ allowedFields = {
     'input'     'chanlabels'     ''      '';
     ...
     'preproc'   'subFirstSample' false   'Subtract first sample to avoid ripples at the beggining of the data';
-    'preproc'   'precision'      'double' 'Data precision, single or double';
+    'preproc'   'precision'      'double' 'Data precision, single or double (some non-linear filters require double precision to be stable)';
     'preproc'   'filtFlag'       true    'Filter data (true or false)';
     'preproc'   'badchanFlag'    false   'Bad channel detection and interpolation (true or false). Require baseline file.';
     'preproc'   'A'              []      '';
@@ -61,12 +61,16 @@ allowedFields = {
     'measure'   'connectprocess' []        'Structure with function in each field.';
     'measure'   'preset'         'default' 'Preset type of feedback, ''default'' is theta, ''allfreqs'' is all frequencies for all channels.';
     ...
-    'feedback'  'feedbackMode'   'dynrange' '"dynrange" for dynamic continuous range or "threshold" for crossing threshold mode.';
+    'feedback'  'feedbackMode'   'dynrange' '"bounded" for 0 to 1 output, "dynrange" for dynamic continuous range or "threshold" for crossing threshold mode.';
+    'feedback'  'initialvalue'   1         'Initial value for feedback';
     'feedback'  'threshold'      ''        'Threshold value at startup';
     'feedback'  'thresholdMem'   ''        'Threshold memory. A memory of 75% is new_threshold = current_value * 0.25 + old_threshold * 0.75.';
     'feedback'  'thresholdMode'  'go'      'Can be "go" (1 when above threshold, 0 otherwise) or "stop" (1 when below threshold, 0 otherwise).';
     'feedback'  'thresholdWin'   180       'Window to compute threshold in second, use NaN if you do not want to use a window.';
     'feedback'  'thresholdPer'   0.8       'Set threshold to percentage of value in the window above.';
+    'feedback'  'boundedfactorh' 0.6       'Memory of previous feedback if cdf of z-score (betwoeen 0 and 1) is above previous feedback (use 0 for no memory)';
+    'feedback'  'boundedfactorl' 0.6       'Memory of previous feedback if cdf of z-score (betwoeen 0 and 1) is below previous feedback';
+    'feedback'  'boundedfactorinc' 0.2     'Bias factor to increase values toward 1 (use 0 for no bias)';
     'feedback'  'dynRange'       [16 29]   'Power range at startup in dB.';
     'feedback'  'dynRangeInc'    0.0333    'Increase in dynamical range in percent if the, power value is outside the range (every window increment).';
     'feedback'  'dynRangeDec'    0.01      'Decrease in dynamical range in percent if the, power value is outside the range (every window increment).';
@@ -164,7 +168,7 @@ if ~isempty(g.measure.freqprocess) && isempty(g.feedback.feedbackfield), tmpFiel
 if ischar(g.measure.normfile) && ~isempty(g.measure.normfile)
     g.measure.normfile = load('-mat', g.measure.normfile);
     fields = fieldnames(g.measure.normfile);
-    if length(fields) == 1
+    if length(fields) == 1 && isstruct(g.measure.normfile.(fields{1}))
         g.measure.normfile = g.measure.normfile.(fields{1});
     end
 end
