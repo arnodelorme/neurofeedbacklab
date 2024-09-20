@@ -218,8 +218,8 @@ dataBuffer     = zeros(length(g.input.chans), (g.input.windowSize*2)/g.input.sra
 dataBufferFilt = zeros(length(g.input.chans), (g.input.windowSize*2)/g.input.srate*g.input.srateHardware);
 dataBufferPointer = 1;
 
-dataAccuOri  = zeros(length(g.input.chans), (g.session.sessionDuration+3)*g.input.srate, 'single'); % to save the data
-dataAccuFilt = zeros(length(g.input.chans), (g.session.sessionDuration+3)*g.input.srate, 'single'); % to save the data
+dataAccuOri  = zeros(length(g.input.chans), (g.session.sessionDuration+3)*g.input.srate, g.preproc.precision); % to save the data
+dataAccuFilt = zeros(length(g.input.chans), (g.session.sessionDuration+3)*g.input.srate, g.preproc.precision); % to save the data
 dataAccuPointer = 1;
 feedbackVal    = 0.5;       % initial feedback value
 
@@ -518,6 +518,9 @@ while 1
         
         % fill buffer
         if ~isempty(chunk) && size(chunk,2) > 1
+            if isequal(g.preproc.precision, 'double')
+                chunk = double(chunk);
+            end
             % fprintf('%d samples (%1.10f)\n', size(chunk,2), sum(chunk(:,1)));
             
             % truncate chunk if too long
@@ -535,7 +538,15 @@ while 1
             if ~isempty(fidRaw)
                 fwrite(fidRaw, chunk, 'float');
             end
-            
+
+            % remove fist sample
+            if g.preproc.subFirstSample
+                if dataBufferPointer == 1
+                    firstSample = chunk(:,1);
+                end
+                chunk = bsxfun(@minus, chunk, firstSample);
+            end
+
             % filter chunk
             if g.preproc.filtFlag
                 if size(chunk,2) == 1, error('Filter cannot process a single sample - increase ''pauseSecond'' parameter'); end

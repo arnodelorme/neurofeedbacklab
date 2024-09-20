@@ -34,6 +34,8 @@ allowedFields = {
     'input'     'chanmask'       []      'Spatial filter for feedback (one row per channel). For example [1 -1; 0 0] will compute channel 1 minus 2. Default is "eye" or square matrix with ones on the diagonal ([1 0; 0 1] for 2 channels).';
     'input'     'chanlabels'     ''      '';
     ...
+    'preproc'   'subFirstSample' false   'Subtract first sample to avoid ripples at the beggining of the data';
+    'preproc'   'precision'      'double' 'Data precision, single or double';
     'preproc'   'filtFlag'       true    'Filter data (true or false)';
     'preproc'   'badchanFlag'    false   'Bad channel detection and interpolation (true or false). Require baseline file.';
     'preproc'   'A'              []      '';
