@@ -70,7 +70,8 @@ allowedFields = {
     'feedback'  'thresholdPer'   0.8       'Set threshold to percentage of value in the window above.';
     'feedback'  'boundedfactorh' 0.6       'Memory of previous feedback if cdf of z-score (betwoeen 0 and 1) is above previous feedback (use 0 for no memory)';
     'feedback'  'boundedfactorl' 0.6       'Memory of previous feedback if cdf of z-score (betwoeen 0 and 1) is below previous feedback';
-    'feedback'  'boundedfactorinc' 0.2     'Bias factor to increase values toward 1 (use 0 for no bias)';
+    'feedback'  'boundedfactorinc' 0       'Bias factor to increase values toward 1 (use 0 for no bias)';
+    'feedback'  'boundedgamma'   0.5       'Gamma correction to apply to final output value (use 1 for no correction)';
     'feedback'  'dynRange'       [16 29]   'Power range at startup in dB.';
     'feedback'  'dynRangeInc'    0.0333    'Increase in dynamical range in percent if the, power value is outside the range (every window increment).';
     'feedback'  'dynRangeDec'    0.01      'Decrease in dynamical range in percent if the, power value is outside the range (every window increment).';

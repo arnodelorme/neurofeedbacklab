@@ -714,6 +714,7 @@ while 1
                             feedbackVal = oldFeedback*g.feedback.boundedfactorl + Xbounded*(1-g.feedback.boundedfactorl); % low factor
                         end
                         feedbackVal = feedbackVal*(1-g.feedback.boundedfactorinc) + g.feedback.boundedfactorinc; % positive bias factor
+                        feedbackVal = feedbackVal^g.feedback.boundedgamma;
                         
                     elseif strcmpi(g.feedback.feedbackMode, 'dynrange')
                         % assess if value position within a range
