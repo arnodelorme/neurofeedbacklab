@@ -27,7 +27,7 @@ allowedFields = {
     'input'     'lslname'        ''      'This is the name of the stream that shows in Lab Recorder.';
     'input'     'chans'          []      'Indices of data channels to process. Default is [] or all.';
     'input'     'srate'          250     'Sampling rate';
-    'input'     'chanlocs'       []      'Optional channel location for bad channel rejection and ICLabel';
+    'input'     'chanlocs'       []      'Optional channel location and labels for bad channel rejection and ICLabel';
     'input'     'srateHardware'  ''      'Sampling rate of the hardware (will default to sampling rate above if empty). Use a multiple to downsample the data (e.g. with 500, every other sample is ignored).';
     'input'     'windowSize'     []      'Length of window size for FFT (by default empty and set equal to srate, so 1 second).';
     'input'     'windowInc'      0.25    'Window increment/frequency of feedback in fraction of second or samples, default is 0.25 second.';
@@ -47,9 +47,11 @@ allowedFields = {
     'preproc'   'chanCorr'       0.65    'Minimum channel correlation ChannelCriterion for rejecting bad channels. Require baseline file.';
     'preproc'   'badChans'       []      '';     % indices of bad channels, overwriten by baseline file when badchanFlag is true.
     ...
-    'measure'   'freqrange'      { [3.5 6.5] } 'Frequency ranges of interest.';
+    'measure'   'freqrange'      { [3.5 6.5] } 'Frequency bands of interest.';
+    'measure'   'freqlabels'     { }           'Frequency band labels of interest.';
     'measure'   'freqdb'         true      'Convert power to dB scale (true or false).'; % convert power to dB
-    'measure'   'freqprocess'    struct('thetaChan1', @(x)x(1)) 'Structure with function in each field. Default is theta power of channel 1.';
+    'measure'   'freqprocess'     struct('thetaChan1', @(x)x(1)) 'Structure with function in each field. Default is theta power of channel 1.';
+    'measure'   'freqprocessmode' 'array' 'Use array ''array'' or structure ''struct'' to process spectral data (see examples).';
     'measure'   'addfreqprocess' ''        '';
     'measure'   'loretaFlag'     false     'Flag to compute eLoreta (beta).';
     'measure'   'loreta_file'    ''        'Loreta file to provide as input.';
@@ -61,13 +63,15 @@ allowedFields = {
     'measure'   'connectprocess' []        'Structure with function in each field.';
     'measure'   'preset'         'default' 'Preset type of feedback, ''default'' is theta, ''allfreqs'' is all frequencies for all channels.';
     ...
-    'feedback'  'feedbackMode'   'dynrange' '"bounded" for 0 to 1 output, "dynrange" for dynamic continuous range or "threshold" for crossing threshold mode.';
+    'feedback'  'zbaseline'      false     'Computes a z-score compared to baseline. May be used in conjunction with "bounded", "threshold" or "dynrange" feedback';
+    'feedback'  'zMem'           1         'z-score memory for zbaseline method. A memory of 95% is new_z_mean = value * 0.05 + old_z_mean * 0.95 and the same for standard dev. A memory of 1 means no update after baseline.';
+    'feedback'  'feedbackMode'   'dynrange' '"bounded" assumes z-score or centered value as input, convert to value between 0 to 1 output, "dynrange" for dynamic continuous range, "threshold" for crossing threshold mode.';
     'feedback'  'initialvalue'   1         'Initial value for feedback';
-    'feedback'  'threshold'      ''        'Threshold value at startup';
-    'feedback'  'thresholdMem'   ''        'Threshold memory. A memory of 75% is new_threshold = current_value * 0.25 + old_threshold * 0.75.';
+    'feedback'  'threshold'      2         'Threshold value at startup (2 standard dev. if using z-baseline method); otherwise the value is in the original spectral unit.';
+    'feedback'  'thresholdMem'   1         'Threshold memory. A memory of 75% is new_threshold = current_value * 0.25 + old_threshold * 0.75. 1 is constant threshold.';
     'feedback'  'thresholdMode'  'go'      'Can be "go" (1 when above threshold, 0 otherwise) or "stop" (1 when below threshold, 0 otherwise).';
-    'feedback'  'thresholdWin'   180       'Window to compute threshold in second, use NaN if you do not want to use a window.';
-    'feedback'  'thresholdPer'   0.8       'Set threshold to percentage of value in the window above.';
+    'feedback'  'thresholdWin'   NaN       'Overwrite thresholdMem. Window to compute threshold in second (e.g., 180), use NaN if you do not want to use a window and want to use thresholdMem.';
+    'feedback'  'thresholdPer'   0.8       'Set threshold to percentile of value in the window above. 1 is the max (not recommended). 0.5 the median.';
     'feedback'  'boundedfactorh' 0.6       'Memory of previous feedback if cdf of z-score (betwoeen 0 and 1) is above previous feedback (use 0 for no memory)';
     'feedback'  'boundedfactorl' 0.6       'Memory of previous feedback if cdf of z-score (betwoeen 0 and 1) is below previous feedback';
     'feedback'  'boundedfactorinc' 0       'Bias factor to increase values toward 1 (use 0 for no bias)';
@@ -203,6 +207,33 @@ elseif strcmpi(g.measure.preset, 'allfreqs')
     g.feedback.feedbackfield = '';
 else
     error('Unknown preset computation');
+end
+
+if strcmpi(g.feedback.feedbackMode, 'threshold') && isempty(g.feedback.threshold)
+    error('Threshold need to be set to non-empty value when using the threshold method')
+end
+% check chanlocs
+if ~isempty(g.input.chanlocs)
+    if length(g.input.chanlocs) ~= g.input.chans
+        error('The length of ''chanlocs'' input must be the same as the ''chans'' parameter')
+    end
+end
+
+% check frequency band labels
+if ~isempty(g.measure.freqlabels)
+    if length(g.measure.freqlabels) ~= length(g.measure.freqrange)
+        error('The length of frequency band labels (freqlabels) and frequency band ranges need to be the same')
+    end
+end
+
+% check for freqprocessmode
+if strcmpi(g.measure.freqprocessmode, 'struct')
+    if isempty(g.input.chanlocs)
+        error('You need to provide channel location structure with channel labels when using the ''struct'' freqprocessmode option')
+    end
+    if isempty(g.measure.freqlabels)
+        error('You need to provide frequency band labels when using the ''struct'' freqprocessmode option')
+    end
 end
 
 % fir filter below (preserve phase but long delay)
