@@ -187,7 +187,7 @@ elseif strcmpi(g.session.runmode, 'baseline')
     msg(end+1).command = 'quit';
     iMsg = 1;
 elseif strcmpi(g.session.runmode, 'trial')
-    if isequal(g.session.fileNameAsrDefault, g.session.fileNameAsr) && (g.preproc.asrFlag || g.preproc.icaFlag || g.preproc.badchanFlag)
+    if isequal(g.session.fileNameAsrDefault, g.session.fileNameAsr) && (g.preproc.asrFlag || g.preproc.icaFlag || g.preproc.badchanFlag || g.feedback.zbaseline)
         asrFiles = dir('*asr_filter*.mat');
         if isempty(asrFiles)
             error('No baseline file found in current folder, run baseline first');
@@ -381,8 +381,8 @@ while 1
             fprintf('Starting new session...\n', g.session.fileNameAsr);
             currentMode = 'run';
             stateAsr = [];
-            if strcmpi(g.session.runmode, 'trial') && ( g.preproc.asrFlag || g.preproc.icaFlag || g.preproc.badchanFlag )
-                [stateAsr, dynRange, g.preproc.icaWeights, g.preproc.icaWinv, g.preproc.icaRmInd, g.preproc.badChans] = nfblab_loadasr(g.session.fileNameAsr);
+            if strcmpi(g.session.runmode, 'trial') && ( g.preproc.asrFlag || g.preproc.icaFlag || g.preproc.badchanFlag || g.feedback.zbaseline )
+                [stateAsr, dynRange, g.preproc.icaWeights, g.preproc.icaWinv, g.preproc.icaRmInd, g.preproc.badChans, g.feedback.zmean, g.feedback.zmean2] = nfblab_loadasr(g.session.fileNameAsr);
             end
             
             % check if a file for saving need to be created
@@ -428,7 +428,9 @@ while 1
                     else
                         [icaWeights, icaWinv, icaRmInd] = deal([]);
                     end
-                    save('-mat', g.session.fileNameAsr, 'stateAsr', 'dynRange', 'dataAccuOriSave', 'dataAccuFiltSave', 'chunkMarkerSave', 'chunkPowerSave', 'chunkFeedbackSave', 'chunkResultsSave', 'chunkDynRangeSave', 'chunkThresholdSave', 'icaWeights', 'icaWinv', 'icaRmInd', 'badChans', 'g');
+                    zmean  = mean(chunkPowerSave);
+                    zmean2 = mean(chunkPowerSave.^2);
+                    save('-mat', g.session.fileNameAsr, 'stateAsr', 'dynRange', 'dataAccuOriSave', 'dataAccuFiltSave', 'chunkMarkerSave', 'chunkPowerSave', 'chunkFeedbackSave', 'chunkResultsSave', 'chunkDynRangeSave', 'chunkThresholdSave', 'icaWeights', 'icaWinv', 'icaRmInd', 'badChans', 'zmean', 'zmean2', 'g');
                     fprintf('Saving Baseline file %s\n', g.session.fileNameAsr);
                 else
                     % close text file
@@ -644,7 +646,7 @@ while 1
                     opt.loreta_Networks = loreta_Networks;
                     opt.loreta_ROIS     =loreta_ROIS;
                     [~,results] = roi_network(EEG, 'networkfile', opt, 'nfft', g.measure.nfft, 'freqrange', g.measure.freqrange, 'freqdb', g.measure.freqdb, ...
-                        'processfreq', g.measure.freqloreta, 'processconnect', g.measure.connectproces, 'roilist', ROI_list);
+                        'processfreq', g.measure.freqloreta, 'processconnect', g.measure.connectprocess, 'roilist', ROI_list);
                 end
                 
                 % Apply linear transformation (get channel Fz at that point)
@@ -663,10 +665,25 @@ while 1
                         dataSpecSelect(:,iSpec) = 10*log10(dataSpecSelect(:,iSpec)); % Warning: log done after averaging power in freq range
                     end
                 end
-                
-                % compute metric of interest
-                for iProcess = 1:length(freqprocessFields)
-                    results.(freqprocessFields{iProcess}) = feval(g.measure.freqprocess.(freqprocessFields{iProcess}), dataSpecSelect);
+
+                % convert spectral array if needed
+                if strcmpi(g.measure.freqprocessmode, 'struct')
+                    dataSpecSelectStruct = [];
+                    for iChan = 1:size(dataSpecSelect,1)
+                       for iFreq = 1:size(dataSpecSelect,2)
+                           % Organize the data as folow dataSpecSelectStruct.theta.Fz
+                           dataSpecSelectStruct.(g.measure.freqlabels{iFreq}).(g.input.chanlocs(iChan).labels) = dataSpecSelect(iChan, iFreq);
+                       end
+                    end
+                    % compute metric of interest
+                    for iProcess = 1:length(freqprocessFields)
+                        results.(freqprocessFields{iProcess}) = feval(g.measure.freqprocess.(freqprocessFields{iProcess}), dataSpecSelectStruct);
+                    end
+                else         
+                    % compute metric of interest
+                    for iProcess = 1:length(freqprocessFields)
+                        results.(freqprocessFields{iProcess}) = feval(g.measure.freqprocess.(freqprocessFields{iProcess}), dataSpecSelect);
+                    end
                 end
                 
                 % normalize all fields
@@ -704,6 +721,16 @@ while 1
                 end
                 
                 if ~isinf(X)
+                    if g.feedback.zbaseline
+                        % update mean and mean2
+                        g.feedback.zmean  = g.feedback.zMem*g.feedback.zmean  + (1-g.feedback.zMem)*X;
+                        g.feedback.zmean2 = g.feedback.zMem*g.feedback.zmean2 + (1-g.feedback.zMem)*(X^2);
+
+                        % compute z
+                        stdTmp = sqrt(g.feedback.zmean2 - g.feedback.zmean^2);
+                        X      = (X - g.feedback.zmean)/stdTmp;
+                    end
+
                     if strcmpi(g.feedback.feedbackMode, 'bounded')
                         Xbounded = normcdf(X);
                         
@@ -750,22 +777,22 @@ while 1
                         threshold = threshold*g.feedback.thresholdMem + X*(1-g.feedback.thresholdMem);
                         
                         % use percentage over a past window
-                        chunkPerSecFloat = EEG.srate/g.input.windowInc;
-                        if chunkCount > g.feedback.thresholdWin*chunkPerSecFloat
-                            if strcmpi(g.feedback.thresholdMode, 'stop')
-                                 threshold = quantile(chunkPower(chunkCount-floor(g.feedback.thresholdWin*chunkPerSecFloat):chunkCount), g.feedback.thresholdPer);
-                            else threshold = quantile(chunkPower(chunkCount-floor(g.feedback.thresholdWin*chunkPerSecFloat):chunkCount), 1-g.feedback.thresholdPer);
-                            end
-                        else
-                            if strcmpi(g.feedback.thresholdMode, 'stop')
-                                 threshold = quantile(chunkPower(1:chunkCount), g.feedback.thresholdPer);
-                            else threshold = quantile(chunkPower(1:chunkCount), 1-g.feedback.thresholdPer);
+                        if ~isnan(g.feedback.thresholdWin)
+                            chunkPerSecFloat = EEG.srate/g.input.windowInc;
+                            if chunkCount > g.feedback.thresholdWin*chunkPerSecFloat
+                                if strcmpi(g.feedback.thresholdMode, 'stop')
+                                     threshold = quantile(chunkPower(chunkCount-floor(g.feedback.thresholdWin*chunkPerSecFloat):chunkCount), g.feedback.thresholdPer);
+                                else threshold = quantile(chunkPower(chunkCount-floor(g.feedback.thresholdWin*chunkPerSecFloat):chunkCount), 1-g.feedback.thresholdPer);
+                                end
+                            else
+                                if strcmpi(g.feedback.thresholdMode, 'stop')
+                                     threshold = quantile(chunkPower(1:chunkCount), g.feedback.thresholdPer);
+                                else threshold = quantile(chunkPower(1:chunkCount), 1-g.feedback.thresholdPer);
+                                end
                             end
                         end
+
                         chunkThreshold(chunkCount) = threshold;
-                        %results.thresholdMem = thresholdMem;
-                        %results.thresholdWin = thresholdWin;
-                        %results.chunkPerSecFloat = chunkPerSecFloat;
                         results.thresholdPer = g.feedback.thresholdPer;
                         %results.chunkCount = chunkCount;
                         
