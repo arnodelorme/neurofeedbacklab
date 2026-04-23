@@ -717,6 +717,16 @@ while 1
                     end
                 end
                 
+                % add 1-30 Hz power spectrum to results
+                if g.measure.spectrumout
+                    specFreqIdx = find(freqs >= 1 & freqs <= 30);
+                    specPower = abs(dataSpec(specFreqIdx,:)).^2;
+                    if g.measure.freqdb
+                        specPower = 10*log10(specPower);
+                    end
+                    results.spectrum = specPower'; % channels x freqbins
+                end
+
                 % normalize all fields
                 if ~isempty(g.measure.normfile)
                     results = nfblab_zscore(results, g.measure.normfile, g.measure.normagerange);

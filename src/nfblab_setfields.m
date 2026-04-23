@@ -59,6 +59,7 @@ allowedFields = {
     'measure'   'normagerange'   []        'Age range of the person being tested.';
     'measure'   'evt'            ''        '';
     'measure'   'nfft'           []        'Length of FFT - allows FFT padding if necessary.';
+    'measure'   'spectrumout'    true      'Include 1-30 Hz power spectrum in JSON output (true or false).';
     'measure'   'connectprocess' []        'Structure with function in each field.';
     'measure'   'preset'         'default' 'Preset type of feedback, ''default'' is theta, ''allfreqs'' is all frequencies for all channels.';
     ...
